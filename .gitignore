@@ -6,9 +6,20 @@
 
 # BlueJ files
 *.ctxt
+*.aux
+*.loa
+*.lof
+*.lot
+*.out
+*.toc
+*.tdo
+*.log
+*.gz
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
+.idea/
+.gradle/
 
 # Package Files #
 *.jar
