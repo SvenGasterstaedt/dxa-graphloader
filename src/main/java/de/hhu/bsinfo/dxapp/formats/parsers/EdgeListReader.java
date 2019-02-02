@@ -1,10 +1,8 @@
-package de.hhu.bsinfo.dxapp.parser;
+package de.hhu.bsinfo.dxapp.formats.parsers;
 
 import de.hhu.bsinfo.dxapp.data.Edge;
 import de.hhu.bsinfo.dxapp.data.LabeledVertex;
 import de.hhu.bsinfo.dxapp.data.Vertex;
-
-import java.io.IOException;
 
 public class EdgeListParser extends SimpleFormatParser {
 

@@ -1,8 +1,5 @@
-package de.hhu.bsinfo.dxapp.parser;
+package de.hhu.bsinfo.dxapp.formats.parsers;
 
-
-import de.hhu.bsinfo.dxapp.data.Edge;
-import de.hhu.bsinfo.dxapp.data.Vertex;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -21,7 +18,7 @@ public abstract class SimpleFormatParser extends GraphFormatParser {
     }
 
     public String readLine() throws IOException {
-            return reader.readLine();
+        return reader.readLine();
     }
 
     @Override
@@ -30,7 +27,7 @@ public abstract class SimpleFormatParser extends GraphFormatParser {
     }
 
     public void close() throws IOException {
-        if(byteStream!=null){
+        if (byteStream != null) {
             byteStream.close();
         }
     }
