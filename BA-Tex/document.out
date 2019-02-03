@@ -1,0 +1,28 @@
+\BOOKMARK [0][-]{chapter.1}{Introduction}{}% 1
+\BOOKMARK [0][-]{chapter.2}{Preliminaries}{}% 2
+\BOOKMARK [1][-]{section.2.1}{Graph Notations}{chapter.2}% 3
+\BOOKMARK [1][-]{section.2.2}{Graph File Formats}{chapter.2}% 4
+\BOOKMARK [2][-]{subsection.2.2.1}{Divisibility}{section.2.2}% 5
+\BOOKMARK [2][-]{subsection.2.2.2}{Simple Formats}{section.2.2}% 6
+\BOOKMARK [2][-]{subsection.2.2.3}{XML Formats}{section.2.2}% 7
+\BOOKMARK [2][-]{subsection.2.2.4}{JSON Graph}{section.2.2}% 8
+\BOOKMARK [0][-]{chapter.3}{Architecture}{}% 9
+\BOOKMARK [1][-]{section.3.1}{DXRAM}{chapter.3}% 10
+\BOOKMARK [1][-]{section.3.2}{Architecture of the Application}{chapter.3}% 11
+\BOOKMARK [2][-]{subsection.3.2.1}{Deployment}{section.3.2}% 12
+\BOOKMARK [2][-]{subsection.3.2.2}{Reading and Loading}{section.3.2}% 13
+\BOOKMARK [2][-]{subsection.3.2.3}{Storing}{section.3.2}% 14
+\BOOKMARK [1][-]{section.3.3}{Issues}{chapter.3}% 15
+\BOOKMARK [2][-]{subsection.3.3.1}{Efficient loading of the file data into memory}{section.3.3}% 16
+\BOOKMARK [2][-]{subsection.3.3.2}{Duplicate node objects}{section.3.3}% 17
+\BOOKMARK [2][-]{subsection.3.3.3}{Integration in DXRAM}{section.3.3}% 18
+\BOOKMARK [0][-]{chapter.4}{Evaluation}{}% 19
+\BOOKMARK [1][-]{section.4.1}{Benchmark: File Reading Methods}{chapter.4}% 20
+\BOOKMARK [0][-]{chapter.5}{Implementation}{}% 21
+\BOOKMARK [1][-]{section.5.1}{Benchmark}{chapter.5}% 22
+\BOOKMARK [1][-]{section.5.2}{Java-Code}{chapter.5}% 23
+\BOOKMARK [0][-]{appendix.A}{Mein Anhang}{}% 24
+\BOOKMARK [0][-]{appendix.A}{Literaturverzeichnis}{}% 25
+\BOOKMARK [0][-]{appendix.A}{Abbildungsverzeichnis}{}% 26
+\BOOKMARK [0][-]{appendix.A}{Tabellenverzeichnis}{}% 27
+\BOOKMARK [0][-]{appendix.A}{Algorithmenverzeichnis}{}% 28
