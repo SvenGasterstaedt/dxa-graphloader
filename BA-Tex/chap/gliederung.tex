@@ -19,6 +19,7 @@ A graph $G$ is called a
  \item Hypergraph if it contains edges, which have more than two vertices connected to it.
 \end{enumerate}
 \end{mydef}
+\newpage
 \section{Graph File Formats}
 A graph file is a file, which contains the information to construct a Graph $G$.\\
 Based on a the collection of graph file formats by \cite{Roughan.10.03.2015}.The most relevant file formats where chosen to be featured in this work. Relevant formats are formats that have been used in the recent time and still seem up-to-date, which is indicated by the overall use counts. Also, the amount of sample data of this file formats that can be found matters. File formats that don’t provide any clear specifications won’t be chosen either, duo to the fact that implementing them would result in a non-consistent parsing/reading, duo to missing constrains. This is based on the problem that other people don't have any specifications either. This could result in the missing conformity of their files. This work will try to select atleast one of each structure type to provide an example implementation of each structure type of graph file formats, so the amount of supported graph file formats can be extended easily.
@@ -54,19 +55,28 @@ A format is fully divisible if it could be split at the any seperator. This defi
 
 \subsection{Simple Formats}
 Simple formats can be often referred to as formats that provide a trivial approach to create a graph format. Often no specification is provided and it isn’t clear where the boundaries of this formats are, like the range of integer values, which character set is used or if the format contains metadata/comments. Many of these formats are fully dividable, duo to the fact that they often contain only one contiguous regions and have a plain hierachy. Also only one seperator is used, so that spkitting at every seperator is given.\cite{Roughan.10.03.2015}
-
+\newpage
 \subsubsection{Trivial Graph Formats}
 As trivial graph file formats (TGF) are referred to a list of formats that vary by every implementation. Standard approaches are edge list, adjacency matrices, neighbor lists and path list.
 Most of the lines inside a simple edge list are the same list just connections between node a and node b separated by tabs, comma or spaces. It is clear that this format can be split easily by just jumping to a position and reading till the next line. All following data could be a new chunk, same approaches can be applied to adjacency matrices, neighbor lists and path list.\\
 The SNAP format is very similar to an edge list with the only addition that comments can be added to the file with a hash tag at the beginning of the line, that’s why it is group with the TGF.\\
-In all these formats lines can be seen as contiguous regions and only one seperator is used, in fact newline characters are the most common separator for TGF. \cite{Roughan.10.03.2015}
+In all these formats lines can be seen as contiguous regions and only one seperator is used, in fact newline characters are the most common separator for TGF. 
 
 \begin{figure}[H]
 	\centering
-	\includegraphics[height=5cm]{img/simple.png}
-	\caption{An example graph with three vertices}
+	\includegraphics[height=4cm]{img/simple.png}
 	\label{simple}
+		\setlength{\tabcolsep}{01cm} % Abstand zwischen den Spalten einer Tabelle
+		\begin{tabular}{lllll}
+			\\
+			adjacency matrices & neighbor list & edge list & path list \\
+			$A = \left( \begin{array}{rrr}0 & 1 & 1 \\0 & 0 & 0 \\1 & 0 & 0\\\end{array}\right)$ &$\begin{array}{lll}1, 2\\1, 3\\3, 1\\\end{array}$ &$\begin{array}{lll}1: & 2,3 \\ 2: \\ 3: & 1\\\end{array}$ &$\begin{array}{lll}3,1,2 \\ 1,3 \\\end{array}$ \\
+			
+		\end{tabular}
+	\caption{An example graph with three vertices in different trivial graph formats\cite{Roughan.10.03.2015}}
 \end{figure}
+
+		
 
 \subsubsection{SIF Format}
 The SIF Format is a combination of an edge list with a neighbor list. Additionally, the type of connection can be specified with strings. It allows multiple edges between the same nodes, if the connection type varies, otherwise it is specified to ignore duplicates. This results in an Multigraph. One downside is that the format allows tabulations or spaces as separators, it is stated that if no tabulations are used in the whole file spaces are used as separators, but because all lines have an equal format, it can be stated, if the first line doesn’t contain any tab character, spaces will be used as separators. Based of the fact that SIF is merge of two TGFs, it can be said that SIF is also fully divisable, only one separator is used per file and the lines are the contiguous regions. \cite{TheCytoscapeConsortium.2017}
