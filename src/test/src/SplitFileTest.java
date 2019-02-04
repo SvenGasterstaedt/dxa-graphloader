@@ -1,4 +1,4 @@
-import de.hhu.bsinfo.dxapp.split.SkippingFileChunkCreator;
+import de.hhu.bsinfo.dxapp.formats.split.SkippingFileChunkCreator;
 import org.assertj.core.api.Java6Assertions;
 import org.junit.Test;
 

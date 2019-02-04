@@ -1,4 +1,4 @@
-package de.hhu.bsinfo.dxapp.split;
+package de.hhu.bsinfo.dxapp.formats.split;
 
 public class InterpretingFileChunkCreator {
 }

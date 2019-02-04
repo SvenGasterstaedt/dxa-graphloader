@@ -4,9 +4,15 @@ This chapter will give a brief introduction into DXRAM. Then the schema accordin
 \section{DXRAM}
 DXRAM is a distrubuted in-memory key/value-store. 
 It is implemented in Java and optimized to manage billions of small data objects. 
-For low latency data access DXRAM keeps 100\% of the data in RAM. 
+For low latency data access DXRAM keeps 100\% of the data in RAM.
 DXRAM provides a low data overhead, which suits hrapg based application very well.
-Nodes of DXRAM can take the role of a "normal" peer or a superpeer. Superpeers are arranged in a chord like ring structure. Peers are always assigned to one superpeer. Superpeer take over adminstativ tasks within the distrubuted system while peers serve the role of a storage or backup nodes.\\
+Nodes of DXRAM can take the role of a "normal" peer or a superpeer. Superpeers are arranged in a chord like ring structure. \begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{img/topology.png}
+	\caption{Topology of DXRAM}
+	\label{topology}
+\end{figure}
+Peers are always assigned to one superpeer. Superpeer take over adminstativ tasks within the distrubuted system while peers serve the role of a storage or backup nodes.
 DXRAM provides its own application programming interface through services. They can be loaded by applications to get access to storage, computing power and more operations. Custom applications can be loaded as jar-files, but must implement the \texttt{AbstractApplication} class and register thereself. All nodes in the system are accessible through the \texttt{BootService}, which can list all online peers and theire role inside the system.
 The key/value-store can be accessed by the \texttt{ChunkService}, who provides several operations for creating, getting and storing data structures in chunks. All data structurs, which should be storable, must implement the \texttt{AbstractChunk} class.\\
 The computing power of the network can be used in serveral ways. One way is the \texttt{JobService} which manages lightweigth jobs. Every job has a unique id and inherits from \texttt{AbstractJob}. Every job has its own thread and can run on a local nodes or be pushed to a remote node. Job will be pushed into a job queue and wait for their execution.. Another way to compute something is the \texttt{MasterSlaveService} enables to run parallel computations on groups of peers. In this group peers can takes different rolee, one peers takes the role of the master, which coordinates the task. The other peers are either workers(slaves) or take no role. One master and several workers make up one computation group.\cite{Beineke.20180714,dxramoverview}

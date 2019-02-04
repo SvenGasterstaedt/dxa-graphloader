@@ -61,6 +61,13 @@ Most of the lines inside a simple edge list are the same list just connections b
 The SNAP format is very similar to an edge list with the only addition that comments can be added to the file with a hash tag at the beginning of the line, that’s why it is group with the TGF.\\
 In all these formats lines can be seen as contiguous regions and only one seperator is used, in fact newline characters are the most common separator for TGF. \cite{Roughan.10.03.2015}
 
+\begin{figure}[H]
+	\centering
+	\includegraphics[height=5cm]{img/simple.png}
+	\caption{An example graph with three vertices}
+	\label{simple}
+\end{figure}
+
 \subsubsection{SIF Format}
 The SIF Format is a combination of an edge list with a neighbor list. Additionally, the type of connection can be specified with strings. It allows multiple edges between the same nodes, if the connection type varies, otherwise it is specified to ignore duplicates. This results in an Multigraph. One downside is that the format allows tabulations or spaces as separators, it is stated that if no tabulations are used in the whole file spaces are used as separators, but because all lines have an equal format, it can be stated, if the first line doesn’t contain any tab character, spaces will be used as separators. Based of the fact that SIF is merge of two TGFs, it can be said that SIF is also fully divisable, only one separator is used per file and the lines are the contiguous regions. \cite{TheCytoscapeConsortium.2017}
 

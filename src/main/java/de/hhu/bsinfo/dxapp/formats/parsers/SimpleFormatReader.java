@@ -6,13 +6,12 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-public abstract class SimpleFormatParser extends GraphFormatParser {
+public abstract class SimpleFormatReader extends GraphFormatReader {
 
     private BufferedReader reader;
     private ByteArrayInputStream byteStream;
 
-    SimpleFormatParser(byte[] chunk) {
-        super(chunk);
+    SimpleFormatReader(byte[] chunk) {
         byteStream = new ByteArrayInputStream(chunk);
         reader = new BufferedReader(new InputStreamReader(byteStream));
     }
@@ -21,7 +20,6 @@ public abstract class SimpleFormatParser extends GraphFormatParser {
         return reader.readLine();
     }
 
-    @Override
     public boolean ready() throws IOException {
         return reader.ready();
     }
