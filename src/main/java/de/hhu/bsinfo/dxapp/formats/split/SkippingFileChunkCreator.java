@@ -1,5 +1,7 @@
 package de.hhu.bsinfo.dxapp.formats.split;
 
+import de.hhu.bsinfo.dxapp.data.FileChunk;
+
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
@@ -35,13 +37,13 @@ public class SkippingFileChunkCreator extends FileChunkCreator {
     }
 
     @Override
-    public byte[] getNextChunk() {
+    public FileChunk getNextChunk() {
         try {
             if (hasRemaining()) {
                 if (remaining() < chunkSize) {
                     content = new byte[(int) remaining()]; //can be casted safely, because chunkSize is an Integer
                     randomAccessFile.read(content);
-                    return content;
+                    return new FileChunk(content);
                 }
 
                 content = new byte[chunkSize];
@@ -54,7 +56,7 @@ public class SkippingFileChunkCreator extends FileChunkCreator {
                     System.arraycopy(remainingLine, 0, content, content.length - remainingLine.length, remainingLine.length);
                 }
 
-                return content;
+                return new FileChunk(content);
             }
         } catch (IOException ex) {
             ex.printStackTrace();

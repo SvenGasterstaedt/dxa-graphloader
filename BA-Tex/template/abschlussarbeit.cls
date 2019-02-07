@@ -64,6 +64,8 @@
 
 % for underlining
 \usepackage{ulem}
+\usepackage{tabularx}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % draft environment for quick notes without proper latex formating

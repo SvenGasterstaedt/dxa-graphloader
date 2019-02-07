@@ -9,12 +9,16 @@ targetCompatibility = '1.8'
 repositories {
     mavenCentral()
 
-    maven() {
-        url "https://dl.bintray.com/hhu-bsinfo/dxram"
-    }
+    //maven() {
+    //    url "https://dl.bintray.com/hhu-bsinfo/dxram"
+    //}
 
     maven {
         url 'https://oss.jfrog.org/artifactory/oss-snapshot-local'
+    }
+
+    flatDir {
+        dirs '/home/sven/Schreibtisch/git/dxram/build/libs'
     }
 }
 
@@ -27,8 +31,8 @@ compileJava {
 }
 
 dependencies {
-    providedImplementation 'de.hhu.bsinfo:dxram:0.7.0' + (Boolean.valueOf(System.getProperty("release")) ? "" : "-SNAPSHOT")
-
+    //providedImplementation 'de.hhu.bsinfo:dxram:0.7.0-SNAPSHOT'
+    providedImplementation 'de.hhu.bsinfo:dxram:0.7.0-SNAPSHOT'
     testImplementation 'junit:junit:4.12'
 }
 

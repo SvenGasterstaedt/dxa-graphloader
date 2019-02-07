@@ -2,39 +2,39 @@
 \contentsline {chapter}{\numberline {1}Introduction}{3}{chapter.1}
 \contentsline {chapter}{\numberline {2}Preliminaries}{5}{chapter.2}
 \contentsline {section}{\numberline {2.1}Graph Notations}{5}{section.2.1}
-\contentsline {section}{\numberline {2.2}Graph File Formats}{5}{section.2.2}
+\contentsline {section}{\numberline {2.2}Graph File Formats}{6}{section.2.2}
 \contentsline {subsection}{\numberline {2.2.1}Divisibility}{6}{subsection.2.2.1}
 \contentsline {subsection}{\numberline {2.2.2}Simple Formats}{7}{subsection.2.2.2}
-\contentsline {subsubsection}{Trivial Graph Formats}{7}{section*.3}
-\contentsline {subsubsection}{SIF Format}{7}{section*.4}
-\contentsline {subsubsection}{KrackPlot 3.0}{8}{section*.5}
-\contentsline {subsection}{\numberline {2.2.3}XML Formats}{8}{subsection.2.2.3}
-\contentsline {subsubsection}{GraphML}{8}{section*.6}
-\contentsline {subsubsection}{Open Graph Markup Language}{8}{section*.7}
-\contentsline {subsubsection}{Resource Description Framework}{9}{section*.8}
-\contentsline {subsection}{\numberline {2.2.4}JSON Graph}{9}{subsection.2.2.4}
-\contentsline {subsubsection}{Other Formats}{9}{section*.9}
+\contentsline {subsubsection}{Trivial Graph Formats}{8}{section*.3}
+\contentsline {subsubsection}{SIF Format}{8}{section*.5}
+\contentsline {subsubsection}{KrackPlot 3.0}{9}{section*.6}
+\contentsline {subsection}{\numberline {2.2.3}XML Formats}{9}{subsection.2.2.3}
+\contentsline {subsubsection}{GraphML}{9}{section*.7}
+\contentsline {subsubsection}{Open Graph Markup Language}{9}{section*.8}
+\contentsline {subsubsection}{Resource Description Framework}{10}{section*.9}
+\contentsline {subsection}{\numberline {2.2.4}JSON Graph}{10}{subsection.2.2.4}
+\contentsline {subsubsection}{Other Formats}{10}{section*.10}
 \contentsline {chapter}{\numberline {3}Architecture}{11}{chapter.3}
 \contentsline {section}{\numberline {3.1}DXRAM}{11}{section.3.1}
 \contentsline {section}{\numberline {3.2}Architecture of the Application}{12}{section.3.2}
 \contentsline {subsection}{\numberline {3.2.1}Deployment}{12}{subsection.3.2.1}
-\contentsline {subsection}{\numberline {3.2.2}Reading and Loading}{12}{subsection.3.2.2}
-\contentsline {subsection}{\numberline {3.2.3}Storing}{12}{subsection.3.2.3}
-\contentsline {section}{\numberline {3.3}Issues}{12}{section.3.3}
-\contentsline {subsection}{\numberline {3.3.1}Efficient loading of the file data into memory}{12}{subsection.3.3.1}
-\contentsline {subsubsection}{File IO}{13}{section*.10}
-\contentsline {subsubsection}{Mapped Memory}{13}{section*.11}
-\contentsline {subsection}{\numberline {3.3.2}Duplicate node objects}{13}{subsection.3.3.2}
-\contentsline {subsubsection}{Hash-Distribution of the Nodes while reading}{13}{section*.12}
-\contentsline {subsubsection}{Solution: Hash-Distribution after reading}{14}{section*.13}
+\contentsline {subsection}{\numberline {3.2.2}Reading and Loading}{13}{subsection.3.2.2}
+\contentsline {subsection}{\numberline {3.2.3}Storing}{13}{subsection.3.2.3}
+\contentsline {section}{\numberline {3.3}Issues}{13}{section.3.3}
+\contentsline {subsection}{\numberline {3.3.1}Efficient loading of the file data into memory}{13}{subsection.3.3.1}
+\contentsline {subsubsection}{File IO}{13}{section*.12}
+\contentsline {subsubsection}{Mapped Memory}{13}{section*.13}
+\contentsline {subsection}{\numberline {3.3.2}Duplicate node objects}{14}{subsection.3.3.2}
+\contentsline {subsubsection}{Hash-Distribution of the Nodes while reading}{14}{section*.14}
+\contentsline {subsubsection}{Solution: Hash-Distribution after reading}{14}{section*.15}
 \contentsline {subsection}{\numberline {3.3.3}Integration in DXRAM}{14}{subsection.3.3.3}
-\contentsline {chapter}{\numberline {4}Evaluation}{15}{chapter.4}
-\contentsline {section}{\numberline {4.1}Benchmark: File Reading Methods}{15}{section.4.1}
-\contentsline {chapter}{\numberline {5}Implementation}{17}{chapter.5}
-\contentsline {section}{\numberline {5.1}Benchmark}{17}{section.5.1}
-\contentsline {section}{\numberline {5.2}Java-Code}{17}{section.5.2}
-\contentsline {chapter}{\numberline {A}Mein Anhang}{19}{appendix.A}
-\contentsline {chapter}{Literaturverzeichnis}{21}{appendix.A}
-\contentsline {chapter}{Abbildungsverzeichnis}{21}{appendix.A}
-\contentsline {chapter}{Tabellenverzeichnis}{23}{appendix.A}
-\contentsline {chapter}{Algorithmenverzeichnis}{25}{appendix.A}
+\contentsline {chapter}{\numberline {4}Evaluation}{17}{chapter.4}
+\contentsline {section}{\numberline {4.1}Benchmark: File Reading Methods}{17}{section.4.1}
+\contentsline {chapter}{\numberline {5}Implementation}{19}{chapter.5}
+\contentsline {section}{\numberline {5.1}Benchmark}{19}{section.5.1}
+\contentsline {section}{\numberline {5.2}Java-Code}{19}{section.5.2}
+\contentsline {chapter}{\numberline {A}Mein Anhang}{21}{appendix.A}
+\contentsline {chapter}{Literaturverzeichnis}{23}{appendix.A}
+\contentsline {chapter}{Abbildungsverzeichnis}{23}{appendix.A}
+\contentsline {chapter}{Tabellenverzeichnis}{25}{appendix.A}
+\contentsline {chapter}{Algorithmenverzeichnis}{27}{appendix.A}

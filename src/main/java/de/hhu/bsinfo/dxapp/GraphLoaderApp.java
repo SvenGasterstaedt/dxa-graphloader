@@ -2,9 +2,9 @@ package de.hhu.bsinfo.dxapp;
 
 import de.hhu.bsinfo.dxram.app.AbstractApplication;
 import de.hhu.bsinfo.dxram.boot.BootService;
+import de.hhu.bsinfo.dxram.chunk.ChunkService;
 import de.hhu.bsinfo.dxram.engine.DXRAMVersion;
 import de.hhu.bsinfo.dxram.generated.BuildConfig;
-import de.hhu.bsinfo.dxram.job.JobService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -40,19 +40,14 @@ public class GraphLoaderApp extends AbstractApplication {
 
         String format = p_args[0];
         String[] file_paths = Arrays.copyOfRange(p_args, 1, p_args.length);
-
-        JobService jobService = getService(JobService.class);
-        GraphLoaderJob graphLoaderJob = null;
         try {
-            graphLoaderJob = new GraphLoaderJob(format, file_paths, peers);
-
-            long jobId = jobService.pushJob(graphLoaderJob);
-            jobService.waitForLocalJobsToFinish();
-            graphLoaderJob.didSucceed();
+            GraphLoader graphLoader = new GraphLoader(format, file_paths, peers);
+            graphLoader.setChunkService(getService(ChunkService.class));
+            graphLoader.execute();
         } catch (Exception e) {
+            e.printStackTrace();
             LOGGER.error("GraphLoader terminated!");
         }
-        return;
     }
 
 

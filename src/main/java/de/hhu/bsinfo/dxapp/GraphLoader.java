@@ -11,15 +11,17 @@ import org.apache.logging.log4j.Logger;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
-class GraphLoaderJob {
+class GraphLoader {
 
     private static final Logger LOGGER = LogManager.getFormatterLogger(GraphLoaderApp.class.getSimpleName());
 
     private String format;
     private String[] files;
     private List<Short> peers;
+    private List<Long> filechunks_ids;
     protected ChunkService chunkService;
 
     void setChunkService(final ChunkService chunkService) {
@@ -27,9 +29,10 @@ class GraphLoaderJob {
     }
 
 
-    protected GraphLoaderJob(final String format, final String[] files, final List<Short> peers) throws Exception {
+    protected GraphLoader(final String format, final String[] files, final List<Short> peers) throws Exception {
         super();
         this.format = format.toUpperCase();
+        this.filechunks_ids = new ArrayList<>();
         this.files = files;
         this.peers = peers;
 
@@ -62,12 +65,13 @@ class GraphLoaderJob {
                     FileChunk fileChunk = chunkCreator.getNextChunk();
                     chunkService.create().create(p, fileChunk);
                     chunkService.put().put(fileChunk);
-                    System.out.println(Long.toHexString(fileChunk.getID()).toUpperCase());
+                    filechunks_ids.add(fileChunk.getID());
                     if (!chunkCreator.hasRemaining()) {
                         break;
                     }
                 }
             }
+            filechunks_ids.stream().forEach(LOGGER::debug);
         }
     }
 }
