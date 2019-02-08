@@ -16,6 +16,10 @@ public abstract class SimpleFormatReader extends GraphFormatReader {
         reader = new BufferedReader(new InputStreamReader(byteStream));
     }
 
+    public SimpleFormatReader() {
+
+    }
+
     public String readLine() throws IOException {
         return reader.readLine();
     }

@@ -1,16 +1,16 @@
 package de.hhu.bsinfo.dxapp.formats.parsers;
 
 import de.hhu.bsinfo.dxapp.data.Edge;
-import de.hhu.bsinfo.dxapp.data.LabeledVertex;
 import de.hhu.bsinfo.dxapp.data.Vertex;
 
 public class EdgeListReader extends SimpleFormatReader {
 
-    private final String delimiter;
-
-    EdgeListReader(byte[] chunk, String delimiter) {
+    public EdgeListReader(byte[] chunk) {
         super(chunk);
-        this.delimiter = delimiter;
+    }
+
+    public EdgeListReader() {
+        super();
     }
 
     public Edge[] getEdges() {
@@ -21,8 +21,11 @@ public class EdgeListReader extends SimpleFormatReader {
 
     public Vertex[] getVertices() {
         try {
-            String[] vertices = readLine().split(delimiter);
-            return new LabeledVertex[]{new LabeledVertex(vertices[0]), new LabeledVertex(vertices[1])};
+            String[] vertices = readLine().split("\n");
+            for (String s : vertices) {
+                System.out.println(s);
+            }
+            return null;
         } catch (Exception e) {
             return null;
         }

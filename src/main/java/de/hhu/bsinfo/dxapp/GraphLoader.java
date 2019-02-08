@@ -1,40 +1,29 @@
 package de.hhu.bsinfo.dxapp;
 
-import de.hhu.bsinfo.dxapp.data.FileChunk;
-import de.hhu.bsinfo.dxapp.formats.GraphFormat;
-import de.hhu.bsinfo.dxapp.formats.SupportedFormats;
-import de.hhu.bsinfo.dxapp.formats.split.FileChunkCreator;
-import de.hhu.bsinfo.dxmem.data.ChunkID;
-import de.hhu.bsinfo.dxram.chunk.ChunkService;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
-
+/*
+@SuppressWarnings("Duplicates")
 class GraphLoader {
 
     private static final Logger LOGGER = LogManager.getFormatterLogger(GraphLoaderApp.class.getSimpleName());
 
-    private String format;
-    private String[] files;
+    private final String format;
+    private final String[] files;
     private List<Short> peers;
     private List<Long> filechunks_ids;
-    protected ChunkService chunkService;
-
-    void setChunkService(final ChunkService chunkService) {
-        this.chunkService = chunkService;
-    }
+    private final GraphLoaderApp dxramServiceAccessor;
+    private final ChunkService chunkService;
+    private final FunctionService functionService;
 
 
-    protected GraphLoader(final String format, final String[] files, final List<Short> peers) throws Exception {
+    protected GraphLoader(final GraphLoaderApp dxramServiceAccessor, final String format, final String[] files, final List<Short> peers) throws Exception {
         super();
         this.format = format.toUpperCase();
         this.filechunks_ids = new ArrayList<>();
         this.files = files;
         this.peers = peers;
+        this.dxramServiceAccessor = dxramServiceAccessor;
+        chunkService = dxramServiceAccessor.getService(ChunkService.class);
+        functionService = dxramServiceAccessor.getService(FunctionService.class);
 
         if (!SupportedFormats.isSupported(format)) {
             LOGGER.error(this.format + " is no not supported!");
@@ -66,6 +55,15 @@ class GraphLoader {
                     chunkService.create().create(p, fileChunk);
                     chunkService.put().put(fileChunk);
                     filechunks_ids.add(fileChunk.getID());
+
+                    DistributableFunction function = new RemoteJob();
+                    FunctionService.Status status = functionService.registerFunction(p, RemoteJob.NAME, function);
+                    ParameterList params, result;
+                    params = new ParameterList(new String[]{"17", "25"});
+                    result = functionService.executeFunctionSync(p, RemoteJob.NAME, params);
+
+                    System.out.println(result.get(0));
+
                     if (!chunkCreator.hasRemaining()) {
                         break;
                     }
@@ -74,4 +72,4 @@ class GraphLoader {
             filechunks_ids.stream().forEach(LOGGER::debug);
         }
     }
-}
+}*/

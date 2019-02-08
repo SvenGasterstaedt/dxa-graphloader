@@ -18,6 +18,14 @@ public class FileChunk extends AbstractChunk {
         this.data = data;
     }
 
+    public FileChunk() {
+
+    }
+
+    public byte[] getData() {
+        return data;
+    }
+
     @Override
     public void exportObject(Exporter p_exporter) {
         p_exporter.writeByteArray(data);
