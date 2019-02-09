@@ -5,7 +5,7 @@ import de.hhu.bsinfo.dxapp.formats.split.FileChunkCreator;
 
 public abstract class GraphFormat {
     FileChunkCreator fileChunkCreator;
-    Class<? extends GraphFormatReader> formatReader;
+    GraphFormatReader formatReader;
     String[] files;
 
     GraphFormat(final String... files) {
@@ -17,7 +17,7 @@ public abstract class GraphFormat {
     }
 
 
-    public Class<? extends GraphFormatReader> getGraphFormatReader() {
+    public GraphFormatReader getGraphFormatReader() {
         return formatReader;
     }
 }

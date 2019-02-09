@@ -1,6 +1,13 @@
 package de.hhu.bsinfo.dxapp.formats.parsers;
 
-public class GraphFormatReader {
+import de.hhu.bsinfo.dxram.chunk.ChunkService;
+import de.hhu.bsinfo.dxutils.serialization.Exportable;
+import de.hhu.bsinfo.dxutils.serialization.Importable;
 
-    public GraphFormatReader(){}
+public abstract class GraphFormatReader {
+
+    public GraphFormatReader() {
+    }
+
+    public abstract boolean execute(byte[] content, ChunkService chunkService, short current_peer);
 }

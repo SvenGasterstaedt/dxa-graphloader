@@ -3,8 +3,11 @@ package de.hhu.bsinfo.dxapp.job;
 import de.hhu.bsinfo.dxapp.GraphLoaderApp;
 import de.hhu.bsinfo.dxapp.data.FileChunk;
 import de.hhu.bsinfo.dxapp.formats.parsers.GraphFormatReader;
+import de.hhu.bsinfo.dxapp.io.Util;
+import de.hhu.bsinfo.dxram.boot.BootService;
 import de.hhu.bsinfo.dxram.chunk.ChunkService;
 import de.hhu.bsinfo.dxram.job.AbstractJob;
+import de.hhu.bsinfo.dxram.net.NetworkService;
 import de.hhu.bsinfo.dxutils.serialization.Exporter;
 import de.hhu.bsinfo.dxutils.serialization.Importer;
 import de.hhu.bsinfo.dxutils.serialization.ObjectSizeUtil;
@@ -18,7 +21,7 @@ public class RemoteJob extends AbstractJob {
 
 
     private long[] p_ids;
-    private Class<? extends GraphFormatReader> graphFormatReader;
+    private String classPath;
 
     public RemoteJob() {
         super();
@@ -26,7 +29,7 @@ public class RemoteJob extends AbstractJob {
 
     public RemoteJob(final long[] p_ids, Class<? extends GraphFormatReader> graphFormatReader) {
         this.p_ids = p_ids;
-        this.graphFormatReader = graphFormatReader;
+        this.classPath = graphFormatReader.getCanonicalName();
     }
 
 
@@ -39,22 +42,29 @@ public class RemoteJob extends AbstractJob {
     public void execute() {
         LOGGER.debug("Job started!");
         ChunkService chunkService = getService(ChunkService.class);
-        FileChunk fileChunk;
-        for (int i = 0; i < p_ids.length; i++) {
-            if (p_ids[i] != 0) {
-                fileChunk = new FileChunk(p_ids[i]);
-
-                LOGGER.debug(Long.toHexString(p_ids[i]));
-                chunkService.get().get(fileChunk);
-                if (fileChunk.isIDValid() && fileChunk.isStateOk())
-                    LOGGER.debug(new String(fileChunk.getContents()));
-            } else {
-                continue;
+        NetworkService networkService = getService(NetworkService.class);
+        BootService bootService = getService(BootService.class);
+        try {
+            GraphFormatReader graphFormatReader = ((Class<? extends GraphFormatReader>) Class.forName(classPath)).newInstance();
+            FileChunk fileChunk;
+            for (int i = 0; i < p_ids.length; i++) {
+                if (p_ids[i] != 0) {
+                    fileChunk = new FileChunk(p_ids[i]);
+                    chunkService.get().get(fileChunk);
+                    if (fileChunk.isIDValid() && fileChunk.isStateOk()) {
+                        graphFormatReader.execute(fileChunk.getContents(), chunkService, bootService.getNodeID());
+                        LOGGER.debug(Long.toHexString(p_ids[i]) + " loaded!");
+                        chunkService.remove().remove(fileChunk);
+                    }
+                } else {
+                    continue;
+                }
             }
-        }
-        LOGGER.debug(graphFormatReader.getCanonicalName());
-        LOGGER.info("Job finished!");
 
+        } catch (InstantiationException | ClassNotFoundException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        LOGGER.info("Job finished!");
     }
 
     @Override
@@ -64,28 +74,9 @@ public class RemoteJob extends AbstractJob {
 
         //removes values on the left then on the right and inserts them on their position
         for (int i = 0; i < p_ids.length; i++) {
-            p_ids[i] = p_ids[i] << 56
-                    ^ p_ids[i] << 48 >>> 56 << 48
-                    ^ p_ids[i] << 40 >>> 56 << 40
-                    ^ p_ids[i] << 32 >>> 56 << 32
-                    ^ p_ids[i] << 24 >>> 56 << 24
-                    ^ p_ids[i] << 16 >>> 56 << 16
-                    ^ p_ids[i] << 8 >>> 56 << 8
-                    ^ p_ids[i] >>> 56;
+            p_ids[i] = Util.fixChunkIDs(p_ids[i]);
         }
-        try {
-            String name = "";
-            name = p_importer.readString(name);
-            Class clazz = Class.forName(name);
-            if (GraphFormatReader.class.isAssignableFrom(clazz)) {
-                graphFormatReader = (Class<? extends GraphFormatReader>) clazz;
-            } else {
-                throw new ClassNotFoundException();
-            }
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-
+        classPath = p_importer.readString(classPath);
 
     }
 
@@ -93,11 +84,12 @@ public class RemoteJob extends AbstractJob {
     public void exportObject(final Exporter p_exporter) {
         super.exportObject(p_exporter);
         p_exporter.writeLongArray(p_ids);
-        p_exporter.writeString(graphFormatReader.getCanonicalName());
+        p_exporter.writeString(classPath);
     }
 
     @Override
     public int sizeofObject() {
-        return super.sizeofObject() + ObjectSizeUtil.sizeofLongArray(p_ids) + ObjectSizeUtil.sizeofString(graphFormatReader.getCanonicalName());
+        return super.sizeofObject() + ObjectSizeUtil.sizeofLongArray(p_ids) + ObjectSizeUtil.sizeofString(classPath);
     }
+
 }

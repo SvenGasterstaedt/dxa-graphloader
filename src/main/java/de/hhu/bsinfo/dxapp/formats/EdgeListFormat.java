@@ -11,8 +11,8 @@ public class EdgeListFormat extends GraphFormat {
         super(files);
         file = files[0];
         try {
-            fileChunkCreator = new SkippingFileChunkCreator(file, 4096);
-            formatReader = EdgeListReader.class;
+            fileChunkCreator = new SkippingFileChunkCreator(file, 4096*1024);
+            formatReader = new EdgeListReader();
         } catch (Exception e) {
             e.printStackTrace();
         }

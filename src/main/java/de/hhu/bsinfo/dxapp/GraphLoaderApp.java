@@ -6,6 +6,7 @@ import de.hhu.bsinfo.dxapp.formats.SupportedFormats;
 import de.hhu.bsinfo.dxapp.formats.split.FileChunkCreator;
 import de.hhu.bsinfo.dxapp.job.JobRegistration;
 import de.hhu.bsinfo.dxapp.job.RemoteJob;
+import de.hhu.bsinfo.dxmem.data.ChunkID;
 import de.hhu.bsinfo.dxram.app.AbstractApplication;
 import de.hhu.bsinfo.dxram.app.ApplicationService;
 import de.hhu.bsinfo.dxram.boot.BootService;
@@ -32,10 +33,6 @@ public class GraphLoaderApp extends AbstractApplication {
 
     private static final Logger LOGGER = LogManager.getFormatterLogger(GraphLoaderApp.class.getSimpleName());
     private List<Short> peers;
-    private List<Long> filechunks_ids;
-    private ChunkService chunkService;
-    private JobService jobService;
-    private ApplicationService applicationService;
     private BootService bootService;
 
     @Override
@@ -51,7 +48,7 @@ public class GraphLoaderApp extends AbstractApplication {
     @Override
     public void main(final String[] p_args) {
         bootService = getService(BootService.class);
-        applicationService = getService(ApplicationService.class);
+        ApplicationService applicationService = getService(ApplicationService.class);
         List<Short> peers = bootService.getOnlinePeerNodeIDs().stream().filter(s -> !s.equals(bootService.getNodeID())).collect(Collectors.toList());
 
 
@@ -69,9 +66,9 @@ public class GraphLoaderApp extends AbstractApplication {
         String format = p_args[0].toUpperCase();
         String[] file_paths = Arrays.copyOfRange(p_args, 1, p_args.length);
         try {
-            this.filechunks_ids = new ArrayList<>();
-            chunkService = getService(ChunkService.class);
-            jobService = getService(JobService.class);
+            List<Long> filechunks_ids = new ArrayList<>();
+            ChunkService chunkService = getService(ChunkService.class);
+            JobService jobService = getService(JobService.class);
 
             if (!SupportedFormats.isSupported(format)) {
                 LOGGER.error(format + " is no not supported!");
@@ -128,11 +125,28 @@ public class GraphLoaderApp extends AbstractApplication {
                     for (long l : chunk_ids[peers.indexOf(p)]) {
                         LOGGER.debug(Long.toHexString(l));
                     }
-                    RemoteJob remoteJob = new RemoteJob(chunk_ids[peers.indexOf(p)], graphFormat.getGraphFormatReader());
+                    RemoteJob remoteJob = new RemoteJob(chunk_ids[peers.indexOf(p)], graphFormat.getGraphFormatReader().getClass());
                     jobService.pushJobRemote(remoteJob, p);
                 }
-                jobService.waitForRemoteJobsToFinish();
-                //filechunks_ids.stream().forEach(LOGGER::debug);
+                boolean valid = true;
+                long id = ChunkID.INVALID_ID;
+                for (int j = chunkCreator.getApproxChunkAmount() / peers.size(); j >= 0; j--) {
+                    if (chunk_ids[peers.size() - 1][j] == 0) continue;
+                    id = chunk_ids[peers.size() - 1][j];
+                }
+                FileChunk fileChunk = new FileChunk(id);
+
+                boolean finished = false;
+                while(!finished){
+                    sleep(100);
+                    try {
+                        finished = jobService.waitForRemoteJobsToFinish();
+                    }catch(Exception e){
+                        finished = false;
+                    }
+                }
+
+
             }
         } catch (
                 Exception e) {
