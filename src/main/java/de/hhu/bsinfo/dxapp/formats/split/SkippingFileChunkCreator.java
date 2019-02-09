@@ -64,4 +64,9 @@ public class SkippingFileChunkCreator extends FileChunkCreator {
         return null;
     }
 
+    @Override
+    public int getApproxChunkAmount() {
+        return (int)(bytesTotal/chunkSize+1);
+    }
+
 }

@@ -12,7 +12,7 @@ public class EdgeListFormat extends GraphFormat {
         file = files[0];
         try {
             fileChunkCreator = new SkippingFileChunkCreator(file, 4096);
-            formatReader = new EdgeListReader();
+            formatReader = EdgeListReader.class;
         } catch (Exception e) {
             e.printStackTrace();
         }

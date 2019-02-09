@@ -6,7 +6,6 @@ import de.hhu.bsinfo.dxapp.formats.SupportedFormats;
 import de.hhu.bsinfo.dxapp.formats.split.FileChunkCreator;
 import de.hhu.bsinfo.dxapp.job.JobRegistration;
 import de.hhu.bsinfo.dxapp.job.RemoteJob;
-import de.hhu.bsinfo.dxmem.data.ChunkID;
 import de.hhu.bsinfo.dxram.app.AbstractApplication;
 import de.hhu.bsinfo.dxram.app.ApplicationService;
 import de.hhu.bsinfo.dxram.boot.BootService;
@@ -93,29 +92,50 @@ public class GraphLoaderApp extends AbstractApplication {
 
             GraphFormat graphFormat = SupportedFormats.getFormat(format, file_paths);
             FileChunkCreator chunkCreator;
+            List<FileChunk> failed = new ArrayList<>();
+
             if (graphFormat != null) {
+
                 chunkCreator = graphFormat.getFileChunkCreator();
+                long[][] chunk_ids = new long[peers.size()][chunkCreator.getApproxChunkAmount() / peers.size() + 1];
+                int i = 0;
                 while (chunkCreator.hasRemaining()) {
                     for (short p : peers) {
-                        long c_id = ChunkID.INVALID_ID;
+
                         FileChunk fileChunk = chunkCreator.getNextChunk();
-                        if (chunkService.create().create(p, fileChunk) > 0) {
-                            chunkService.put().put(fileChunk);
-                            filechunks_ids.add(fileChunk.getID());
+                        chunkService.create().create(p, fileChunk);
+                        chunkService.put().put(fileChunk);
+
+                        if (fileChunk.isIDValid() && fileChunk.isStateOk()) {
+                            chunk_ids[peers.indexOf(p)][i] = fileChunk.getID();
+
+
+                        } else {
+
+                            failed.add(fileChunk);
+
                         }
                         if (!chunkCreator.hasRemaining()) {
+
                             break;
+
                         }
                     }
+                    i++;
                 }
                 for (short p : peers) {
-                    LOGGER.debug("Pushing job "+ RemoteJob.class.getSimpleName() +" to " + Integer.toHexString(p).substring(4).toUpperCase()+ "!");
-                    RemoteJob remoteJob = new RemoteJob();
+                    LOGGER.debug("Pushing job " + RemoteJob.class.getSimpleName() + " to " + Integer.toHexString(p).substring(4).toUpperCase() + "!");
+                    for (long l : chunk_ids[peers.indexOf(p)]) {
+                        LOGGER.debug(Long.toHexString(l));
+                    }
+                    RemoteJob remoteJob = new RemoteJob(chunk_ids[peers.indexOf(p)], graphFormat.getGraphFormatReader());
                     jobService.pushJobRemote(remoteJob, p);
                 }
+                jobService.waitForRemoteJobsToFinish();
                 //filechunks_ids.stream().forEach(LOGGER::debug);
             }
-        } catch (Exception e) {
+        } catch (
+                Exception e) {
             e.printStackTrace();
             LOGGER.error("GraphLoader terminated!");
         }

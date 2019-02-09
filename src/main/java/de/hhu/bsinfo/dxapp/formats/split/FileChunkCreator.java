@@ -6,4 +6,5 @@ public abstract class FileChunkCreator {
 
     abstract public boolean hasRemaining();
     abstract public FileChunk getNextChunk();
+    abstract public int getApproxChunkAmount();
 }
