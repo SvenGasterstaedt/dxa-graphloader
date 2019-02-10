@@ -18,8 +18,7 @@ The key/value-store can be accessed by the \texttt{ChunkService}, who provides s
 The computing power of the network can be used in serveral ways. One way is the \texttt{JobService} which manages lightweigth jobs. Every job has a unique id and inherits from \texttt{AbstractJob}. Every job has its own thread and can run on a local nodes or be pushed to a remote node. Job will be pushed into a job queue and wait for their execution.. Another way to compute something is the \texttt{MasterSlaveService} enables to run parallel computations on groups of peers. In this group peers can takes different rolee, one peers takes the role of the master, which coordinates the task. The other peers are either workers(slaves) or take no role. One master and several workers make up one computation group.\cite{Beineke.20180714,dxramoverview}
 
 \subsection{Integration in DXRAM}
-There are several ways of integrating foreign code in DXRAM. One goal is to be able to load data via a terminal command, but also to be able to easily integrate the loader as a library. Therefore the main part of the application will be accessible through a custom Job, which can be used as library.\\
-To provide terminal access, without the current possibility to execute jobs from the terminal, the job will be wrapped by an DxApp.
+There are several ways of integrating foreign code in DXRAM. One goal is to be able to load data via a terminal command, but also to be able to easily integrate the loader as a library. Therefore the main part of the application will be accessible through a custom Job, which can be used as library. To provide terminal access, without the current possibility to execute jobs from the terminal, the job will be wrapped by an DxApp.
 
 \begin{figure}[H]
 	\centering
@@ -28,33 +27,40 @@ To provide terminal access, without the current possibility to execute jobs from
 	\label{topology}
 \end{figure}
 
+One problem that needs to be solving is that at the current state of development, DXRAM isn't able to register jobs on remote peers. This problem occurs to dependency issues, another problem is that jobs can only be registered on the current peer, but local pushing of jobs is by default disabled. To solve this issue The main application invokes the call of a \texttt{JobRegistrationApp} Application, which are loaded dynamically at runtime. This helper application takes in a list of jobs (function would be possible as well) and registers them on every peer in the network. This offers this application the possibility to execute remote jobs.
+
 \section{Architecture of the Application}
-The loading of the file formats will be managed in three steps:
-\begin{enumerate}
-\item Deploying the file in the distributed system 
-\item Peers read and load the data of their chunks
-\item All loaded data is stored in the key/value-store
-\end{enumerate}
+The architecture of the application consist out of multiple steps. The first steps is to setup our environment,  this includes calling the \texttt{JobRegistrationApp} to register all needed jobs on all peers and also validating the passed in parameters. Some parameters are required like the file(s) to load and the format, other parameters are optional like the amount of peers or an list of peers to run this application on, by default this application will try to use every peer available for maximizing the loading speed.\\
 
-First, a basic graph implementation with vertices and edges must be provided, those should be extendable duo to different graphs, vertex and edge requirements of each format and application.
-Then the graph file will be split by lines for mostly likly simple graph file formats or interpreted for more complex ones. Out of those file splits - file chunks will be created which will be deployed to the corresponding peer. The peer will run the loading job with the loader provided for the format. The file format will be specified by the user as paramter.
-
-\begin{figure}[H]
-	\centering
-	\includegraphics[width=1.0\linewidth]{img/layout.png}
-	\caption{Topology of DXRAM}
-	\label{topology}
-\end{figure}
 
 
 \subsection{Deployment of File data on nodes}
-The deployment can be done in multiple ways, which have to be evaluated. One possibility would splitting the original file into multiple smaller files and access them via the NFS. This approach would be straight forward, but results in one read and write operation of the whole original file size. Also the file would need to be loaded again into memory for extracting its data. This would result in O(2n) on the initiating peer and O(n/chunks).
+The deployment can be done in multiple ways, which have to be evaluated. One possibility would splitting the original file into multiple smaller files and access them via the NFS. This approach would be straight forward, but results in one read and write operation of the whole original file size. Also the file would need to be loaded again into memory for extracting its data. This would result in $O(n)$ on the initiating peer and $O(n/chunks)$.
 Another approach would be to load the data into memory and send chunk structures to the according peers. This reduces the writing operation and another reading operation on the peer, because the data lays already in memory.
 The last method would be to access the original file via the NFS and extract the chunk directly on the remote peer. This would result in distriubution of the loading of the original file in one run, but could result in the bottleneck of the one storing node with the original file. This would probably be slower duo to the fact that all nodes accessing one file, would cause a random read sequence, which is often slower then sequential reads.
+\begin{lstlisting}[language=java]
+	ChunkService chunkService = getService(Chunkservice.class);
+	String filePath = ''examplefile.txt'';
+	int chunkSize = 4096 * 1028; //in bytes
+	List<short> peers = getService(BootService.class).getOnlinePeers();
+	
+	FileChunkCreator chunkCreator = new FileChunkCreator(filepath, chunkSize);
+	
+	while(chunkCreator.hasRemaining()){
+		for(short p:peers){
+			FileChunk fileChunk = chunkCreator.getNextChunk();
+			if(fileChunk != null){
+				chunkService.create().create(p, fileChunk);
+				chunkService.put().put(fileChunk);
+			}
+		}
+	}
+\end{lstlisting}
+While the chunks are created from the file, the chunks could already be processed on the remote peers, so that the concurrency reduces the loading time significantly.
 
 \subsubsection{Efficient Loading of File into Memory}
-One key ability of the application is that the loading of the file system should be fast. Often the reading/writing from Storage Devices is a bottleneck. The first problem is that most Storage Devices are designed for sequential read and write operations and often support only one operation at a time. This leads to the problem that multiple threads reading the storage device is a waste of performance and won’t speed up the input rate of the file. Another problem is that accessing a storage device will cause a context switch. This results in the application stopping, while the kernel executes sensitive functions. This problem is often address with buffering the files and by requesting more data then needed in one step. Buffer sizes are one optimization problem to consider. [5]\\
-The traditional way of accessing the data of a file is a common routine. First the file gets opened after that the data can be read, written in sequential or random order. This method causes many context switches, which force the application to stop, while the kernel executes sensitive functions. That’s why in nearly every case IO gets buffered, so the context switches occur less often. [6]\\
+One key ability of the application is that the loading of the file system should be fast. Often the reading/writing from Storage Devices is a bottleneck. The first problem is that most Storage Devices are designed for sequential read and write operations and often support only one operation at a time. This leads to the problem that multiple threads reading the storage device is a waste of performance and won't speed up the input rate of the file. Another problem is that accessing a storage device will cause a context switch. This results in the application stopping, while the kernel executes sensitive functions. This problem is often address with buffering the files and by requesting more data then needed in one step. Buffer sizes are one optimization problem to consider. [5]\\
+The traditional way of accessing the data of a file is a common routine. First the file gets opened after that the data can be read, written in sequential or random order. This method causes many context switches, which force the application to stop, while the kernel executes sensitive functions. That's why in nearly every case IO gets buffered, so the context switches occur less often. [6]\\
 To reduce the amount of context switches to a minimum. This problem is addressed by memory mapping and suits large files where we can reduce the context switches drastically. A virtual memory mapping between the filesystem and the application address space is created. So expansive system calls can be avoided. The setup of this method is more expensive then the setup of file IO. [5,6]\pageref{sec:FileReading}
 
 
@@ -64,15 +70,15 @@ The processing/ parsing of the data is unique for each format. Some formats like
 \subsection{Storing}
 The extracted vertices, edges and optional metadata needs to be stored. For this task the \texttt{ChunkService} will be used to push the created structs into the key/value-store. ne problem of the distrubuted loading is that peers cannot wait on other peers to get information about vertices, because this would result in too much messages and network traffic for large datasets. This still leaves the problem of not synchronized vertex objects on different peers, which cant be written to the key/value-store because their information could be incomplete. 
 \subsubsection{Duplicate node objects}
-Some formats (especially in edge lists) nodes just get described by their edges. One problem is if two different peers create the same nodes by different edges, so they don’t know if other peers already created a node object for specific nodes. As result they create a local node object with the information they got. In that case after reading the file in its entirety some merge of all hash maps and objects would need to be done. This would result in the problem that one assumption of this work is that one peer can’t keep all nodes and edges in memory, because there are too many objects.\\
+Some formats (especially in edge lists) nodes just get described by their edges. One problem is if two different peers create the same nodes by different edges, so they don't know if other peers already created a node object for specific nodes. As result they create a local node object with the information they got. In that case after reading the file in its entirety some merge of all hash maps and objects would need to be done. This would result in the problem that one assumption of this work is that one peer can't keep all nodes and edges in memory, because there are too many objects.\\
 Hash-Distribution of the Nodes while reading\\
-As result of the fact of reorganizing the nodes after they have been loaded is very inefficient and doesn’t suit our needs, the next approach would be to organize the nodes at loading/parsing-time.
-One way could be to hash the labels/ids used in the graph. Note that the hashes created have no security constrains and don’t need to be unique. This hash could be used to divide the nodes onto the peers. As result every peer would buffer all nodes, that don’t belong to its range of hash values, and send the information he gathered to the according peers. This way we don’t have to deal with duplicate nodes or merge. One problem of this approach is, that peers could end up with a chunk, that contains no nodes that hash to itself.\\
+As result of the fact of reorganizing the nodes after they have been loaded is very inefficient and doesn't suit our needs, the next approach would be to organize the nodes at loading/parsing-time.
+One way could be to hash the labels/ids used in the graph. Note that the hashes created have no security constrains and don't need to be unique. This hash could be used to divide the nodes onto the peers. As result every peer would buffer all nodes, that don't belong to its range of hash values, and send the information he gathered to the according peers. This way we don't have to deal with duplicate nodes or merge. One problem of this approach is, that peers could end up with a chunk, that contains no nodes that hash to itself.\\
 Hash-Distribution after reading\\
 The peers could finish reading the nodes of its chunk and create their own versions in their key-value store. After reading and parsing is finished, they could like in first solution send the key-value-objects to the according nodes based on the hashes of their ids. The target peer then merges all versions of that node and stores the copy that has all information, the other duplicates get deleted. This could result in many objects for one node for each peer
 
 \section{Issues}
-A requirement is that the file is located inside one of our peer’s storage devices and isn’t part of our distributed system in any way. Loading files via an internet connection, will not be featured. Some start parameters are indispensable for this type of application, like the absolute file path, the format of the file or rather the parser that should be used and the number of peers to load the file.
+A requirement is that the file is located inside one of our peer's storage devices and isn't part of our distributed system in any way. Loading files via an internet connection, will not be featured. Some start parameters are indispensable for this type of application, like the absolute file path, the format of the file or rather the parser that should be used and the number of peers to load the file.
 Frist one peer should deal with the file, to distribute it to our others peers. The best thing would be, if the peer, who deals with file, would be the same peer where the file is located on. Otherwise the file transfer to the according peer would be a waste of time, especially for file sizes of several gigabytes. After the file chunks got deployed on the network, they could be parsed and loaded by the prior assigned peers into our DXRAM key-value store. [4]
 
 
@@ -82,3 +88,27 @@ When the chunks arrive on the according slaves, they could immediately start pro
  
 Duo to fact that some formats specify data of nodes in two or multiple places inside the file, it would be an interesting approach of using for example two memory maps of the same file in different sections. So, the chunk (buffer) can be filled with both information at the same time and the node information lie on all on one slave.
 
+\section{Application Programming Interface}
+The loader application provides an simple API. To add own formats, the class needs to be added to the \texttt{SupportedFormats} class and extend the \texttt{GraphFormat} class, which provides information of the required splitting type of the format and, how it should be read.
+\subsection{SupportedFormats}
+The \texttt{SupportedFormats} class, is the lookup table for all formats and which loader and splitter to use. It provides three simple functionalities.
+\begin{itemize}
+ \item[] \textit{addFormat(String key, Class$<$? extends GraphFormat$>$ format)}\\
+ This function adds a format to the supported formats by assigning a key to a class type. For example ''{edgellist}'' is the key for the class \texttt{EdgeListFormat}.
+ \item[] \textit{getFormat(final String key, final String[] files)}\\
+ This function returns the class file for a given format key.
+ \item[] \textit{isSupported(String key)}\\
+This methods returns if a given key is supported.
+\end{itemize}
+
+\subsection{GraphFormat}
+To add a custom format, the class needs to extend the \texttt{GraphFormat} class. A custom format specifies a Splitter and a Parser.
+%First, a basic graph implementation with vertices and edges must be provided, those should be extendable duo to different graphs, vertex and edge requirements of each format and application.
+%Then the graph file will be split by lines for mostly likly simple graph file formats or interpreted for more complex ones. Out of those file splits - file chunks will be created which will be deployed to the corresponding peer. The peer will run the loading job with the loader provided for the format. The file format will be specified by the user as paramter.
+
+%\begin{figure}[H]
+%	\centering
+%	\includegraphics[width=1.0\linewidth]{img/layout.png}
+%	\caption{Topology of DXRAM}
+%	\label{topology}
+%\end{figure}
