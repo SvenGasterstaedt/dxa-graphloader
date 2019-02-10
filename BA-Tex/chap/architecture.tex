@@ -17,6 +17,16 @@ DXRAM provides its own application programming interface through services.DXRAM 
 The key/value-store can be accessed by the \texttt{ChunkService}, who provides several operations for creating, getting and storing data structures in chunks. All data structurs, which should be storable, must implement the \texttt{AbstractChunk} class.\\
 The computing power of the network can be used in serveral ways. One way is the \texttt{JobService} which manages lightweigth jobs. Every job has a unique id and inherits from \texttt{AbstractJob}. Every job has its own thread and can run on a local nodes or be pushed to a remote node. Job will be pushed into a job queue and wait for their execution.. Another way to compute something is the \texttt{MasterSlaveService} enables to run parallel computations on groups of peers. In this group peers can takes different rolee, one peers takes the role of the master, which coordinates the task. The other peers are either workers(slaves) or take no role. One master and several workers make up one computation group.\cite{Beineke.20180714,dxramoverview}
 
+\subsection{Integration in DXRAM}
+There are several ways of integrating foreign code in DXRAM. One goal is to be able to load data via a terminal command, but also to be able to easily integrate the loader as a library. Therefore the main part of the application will be accessible through a custom Job, which can be used as library.\\
+To provide terminal access, without the current possibility to execute jobs from the terminal, the job will be wrapped by an DxApp.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[width=1.0\linewidth]{img/schema.png}
+	\caption{Schema of  code integeration in DXRAM}
+	\label{topology}
+\end{figure}
 
 \section{Architecture of the Application}
 The loading of the file formats will be managed in three steps:
@@ -66,12 +76,6 @@ A requirement is that the file is located inside one of our peer’s storage dev
 Frist one peer should deal with the file, to distribute it to our others peers. The best thing would be, if the peer, who deals with file, would be the same peer where the file is located on. Otherwise the file transfer to the according peer would be a waste of time, especially for file sizes of several gigabytes. After the file chunks got deployed on the network, they could be parsed and loaded by the prior assigned peers into our DXRAM key-value store. [4]
 
 
-
-
-\subsection{Integration in DXRAM}
-DXRAM offers the opportunity to create task or applications. Task can be executed by a working group. A loading task would fit very well for a graph file format loader. File loading and parsing is a task and the abstraction layer of master and slaves suits the concept very well.
-Some key questions are if DXRAM offers the opportunity to assign a master of a working group. If the task of the master can vary to the task of the slaves. How the interaction between master/slaves and slaves/slaves is designed or can slaves only see the master.
-If some of this feature aren’t implemented, can it be done differently or does the task idea gets scraped and the loader is going to be an own application. Is it possible to execute task from the command line?
 First the file data gets loaded into small chunks which can be distrubted tFirst the file gets partially mapped into the memory, where it can be read by the master slave. The master slave first deals with the format specifications of the file, providing the division schema for splitting the file into chunks. chunks and will be dealing with the file format. Duo to the fact that the data, is in memory, multiple thread can access the data parallel to accelerate processing. The processed data will be collected in chunks which will be deployed to the assigned slaves.
 The support of infiniband would be increasing the performance drastically, due to spreading the data in the distributed system would be faster.
 When the chunks arrive on the according slaves, they could immediately start processing their chunks.
