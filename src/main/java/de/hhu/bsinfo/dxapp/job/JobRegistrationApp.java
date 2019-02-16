@@ -30,7 +30,6 @@ public class JobRegistrationApp extends AbstractApplication {
     public void main(String[] p_args) {
         BootService bootService = getService(BootService.class);
         JobService jobService = getService(JobService.class);
-
         String[] jobs = p_args;
 
         //Register jobs

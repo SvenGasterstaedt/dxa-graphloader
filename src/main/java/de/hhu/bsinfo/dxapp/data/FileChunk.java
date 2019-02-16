@@ -10,8 +10,27 @@ public class FileChunk extends AbstractChunk {
 
 
     private byte[] data;
+    private boolean hasNext = true;
+    private long nextID = ChunkID.INVALID_ID;
 
-    public FileChunk(long p_id){
+    public boolean hasNext() {
+        return hasNext;
+    }
+
+    public void setHasNext(boolean hasNext) {
+        this.hasNext = hasNext;
+    }
+
+    public long getNextID() {
+        return nextID;
+    }
+
+    public void setNextID(long nextID) {
+        this.nextID = nextID;
+    }
+
+
+    public FileChunk(long p_id) {
         this.setID(p_id);
     }
 
@@ -24,7 +43,6 @@ public class FileChunk extends AbstractChunk {
         data = null;
     }
 
-
     public byte[] getContents() {
         return data;
     }
@@ -32,16 +50,20 @@ public class FileChunk extends AbstractChunk {
     @Override
     public void exportObject(final Exporter p_exporter) {
         p_exporter.writeByteArray(data);
+        p_exporter.writeBoolean(hasNext);
+        p_exporter.writeLong(nextID);
     }
 
 
     @Override
     public void importObject(final Importer p_importer) {
         data = p_importer.readByteArray(data);
+        hasNext = p_importer.readBoolean(hasNext);
+        nextID = p_importer.readLong(nextID);
     }
 
     @Override
     public int sizeofObject() {
-        return ObjectSizeUtil.sizeofByteArray(data);
+        return ObjectSizeUtil.sizeofByteArray(data) + ObjectSizeUtil.sizeofBoolean() + Long.BYTES;
     }
 }
