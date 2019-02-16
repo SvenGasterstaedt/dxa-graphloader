@@ -16,10 +16,11 @@ import de.hhu.bsinfo.dxram.generated.BuildConfig;
 import de.hhu.bsinfo.dxram.job.JobService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import sun.rmi.runtime.Log;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,7 +33,6 @@ import java.util.stream.Collectors;
 public class GraphLoaderApp extends AbstractApplication {
 
     private static final Logger LOGGER = LogManager.getFormatterLogger(GraphLoaderApp.class.getSimpleName());
-    private List<Short> peers;
     private BootService bootService;
 
     @Override
@@ -55,7 +55,7 @@ public class GraphLoaderApp extends AbstractApplication {
         JobRegistration jobRegistration = new JobRegistration(bootService, applicationService);
         if (!jobRegistration.registerJob(RemoteJob.class)) {
             LOGGER.error("Not all jobs registered!");
-            return;
+            //return;
         }
 
         if (p_args.length < 2) {
@@ -66,7 +66,6 @@ public class GraphLoaderApp extends AbstractApplication {
         String format = p_args[0].toUpperCase();
         String[] file_paths = Arrays.copyOfRange(p_args, 1, p_args.length);
         try {
-            List<Long> filechunks_ids = new ArrayList<>();
             ChunkService chunkService = getService(ChunkService.class);
             JobService jobService = getService(JobService.class);
 
@@ -89,71 +88,53 @@ public class GraphLoaderApp extends AbstractApplication {
 
             GraphFormat graphFormat = SupportedFormats.getFormat(format, file_paths);
             FileChunkCreator chunkCreator;
-            List<FileChunk> failed = new ArrayList<>();
+            boolean send =false;
 
             if (graphFormat != null) {
-
                 chunkCreator = graphFormat.getFileChunkCreator();
-                long[][] chunk_ids = new long[peers.size()][chunkCreator.getApproxChunkAmount() / peers.size() + 1];
-                int i = 0;
+                FileChunk[] prevFileChunks = new FileChunk[peers.size()];
+
                 while (chunkCreator.hasRemaining()) {
                     for (short p : peers) {
-
                         FileChunk fileChunk = chunkCreator.getNextChunk();
-                        chunkService.create().create(p, fileChunk);
-                        chunkService.put().put(fileChunk);
-
-                        if (fileChunk.isIDValid() && fileChunk.isStateOk()) {
-                            chunk_ids[peers.indexOf(p)][i] = fileChunk.getID();
-
-
-                        } else {
-
-                            failed.add(fileChunk);
-
+                        if(chunkService.create().create(p, fileChunk)!=1){
+                            LOGGER.warn("Creation failed, 2nd try!");
+                            if(chunkService.create().create(p, fileChunk)!=1){
+                                LOGGER.error("Failed again!");
+                                return;
+                            }
                         }
+
+                        if (prevFileChunks[peers.indexOf(p)] != null) {
+                            LOGGER.debug("prev chunk ID: " + Long.toHexString(fileChunk.getID()));
+                            prevFileChunks[peers.indexOf(p)].setNextID(fileChunk.getID());
+                            chunkService.put().put(prevFileChunks[peers.indexOf(p)]);
+
+                            if(!send){
+                                submitJob(peers, prevFileChunks, graphFormat, jobService);
+                                send=true;
+                            }
+                        }
+
+                        prevFileChunks[peers.indexOf(p)] = fileChunk;
+
                         if (!chunkCreator.hasRemaining()) {
-
                             break;
-
                         }
                     }
-                    i++;
                 }
-                for (short p : peers) {
-                    LOGGER.debug("Pushing job " + RemoteJob.class.getSimpleName() + " to " + Integer.toHexString(p).substring(4).toUpperCase() + "!");
-                    for (long l : chunk_ids[peers.indexOf(p)]) {
-                        LOGGER.debug(Long.toHexString(l));
-                    }
-                    RemoteJob remoteJob = new RemoteJob(chunk_ids[peers.indexOf(p)], graphFormat.getGraphFormatReader().getClass());
-                    jobService.pushJobRemote(remoteJob, p);
-                }
-                boolean valid = true;
-                long id = ChunkID.INVALID_ID;
-                for (int j = chunkCreator.getApproxChunkAmount() / peers.size(); j >= 0; j--) {
-                    if (chunk_ids[peers.size() - 1][j] == 0) continue;
-                    id = chunk_ids[peers.size() - 1][j];
-                }
-                FileChunk fileChunk = new FileChunk(id);
-
-                boolean finished = false;
-                while(!finished){
-                    sleep(100);
-                    try {
-                        finished = jobService.waitForRemoteJobsToFinish();
-                    }catch(Exception e){
-                        finished = false;
+                for(short p:peers) {
+                    if(prevFileChunks[peers.indexOf(p)]!=null) {
+                        prevFileChunks[peers.indexOf(p)].setHasNext(false);
+                        chunkService.put().put(prevFileChunks[peers.indexOf(p)]);
                     }
                 }
-
-
             }
         } catch (
                 Exception e) {
             e.printStackTrace();
             LOGGER.error("GraphLoader terminated!");
         }
-
     }
 
 
@@ -162,5 +143,14 @@ public class GraphLoaderApp extends AbstractApplication {
 
     @Override
     public void signalShutdown() {
+    }
+
+    private void submitJob(List<Short> peers, FileChunk[] chunkIds, GraphFormat graphFormat, JobService jobService) {
+        for (short p : peers) {
+            LOGGER.debug("Pushing job " + RemoteJob.class.getSimpleName() + " to " + Integer.toHexString(p).substring(4).toUpperCase() + "!");
+            LOGGER.debug("Chunk ID: " + Long.toHexString(chunkIds[peers.indexOf(p)].getID()));
+            RemoteJob remoteJob = new RemoteJob(chunkIds[peers.indexOf(p)].getID(), graphFormat.getGraphFormatReader().getClass());
+            jobService.pushJobRemote(remoteJob, p);
+        }
     }
 }
