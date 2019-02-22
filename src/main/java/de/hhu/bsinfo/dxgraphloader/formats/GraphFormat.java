@@ -1,7 +1,7 @@
-package de.hhu.bsinfo.dxapp.formats;
+package de.hhu.bsinfo.dxgraphloader.formats;
 
-import de.hhu.bsinfo.dxapp.formats.parsers.GraphFormatReader;
-import de.hhu.bsinfo.dxapp.formats.split.FileChunkCreator;
+import de.hhu.bsinfo.dxgraphloader.formats.parsers.GraphFormatReader;
+import de.hhu.bsinfo.dxgraphloader.formats.splitter.FileChunkCreator;
 
 public abstract class GraphFormat {
     FileChunkCreator fileChunkCreator;

@@ -1,4 +1,4 @@
-package de.hhu.bsinfo.dxapp.data;
+package de.hhu.bsinfo.dxgraphloader.graph.data;
 
 import de.hhu.bsinfo.dxmem.data.AbstractChunk;
 import de.hhu.bsinfo.dxmem.data.ChunkID;

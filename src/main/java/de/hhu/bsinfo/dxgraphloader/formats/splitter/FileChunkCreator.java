@@ -1,6 +1,6 @@
-package de.hhu.bsinfo.dxapp.formats.split;
+package de.hhu.bsinfo.dxgraphloader.formats.splitter;
 
-import de.hhu.bsinfo.dxapp.data.FileChunk;
+import de.hhu.bsinfo.dxgraphloader.app.data.FileChunk;
 
 public abstract class FileChunkCreator {
 

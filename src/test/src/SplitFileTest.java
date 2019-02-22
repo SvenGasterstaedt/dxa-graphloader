@@ -1,4 +1,4 @@
-import de.hhu.bsinfo.dxapp.formats.split.SkippingFileChunkCreator;
+import de.hhu.bsinfo.dxgraphloader.formats.splitter.SkippingFileChunkCreator;
 import org.assertj.core.api.Java6Assertions;
 import org.junit.Test;
 
@@ -12,7 +12,7 @@ public class SplitFileTest {
         File file = new File("src/test/data/dataset1.txt");
         File result = new File("out.txt");
         FileOutputStream out_stream = new FileOutputStream(result);
-        SkippingFileChunkCreator skipper = new SkippingFileChunkCreator(file);
+        SkippingLineSplitter skipper = new SkippingLineSplitter(file);
         byte[] chunk;
         while (skipper.ready()) {
             chunk = skipper.getNextChunk();

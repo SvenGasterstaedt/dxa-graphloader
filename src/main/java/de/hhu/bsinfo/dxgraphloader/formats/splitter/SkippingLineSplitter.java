@@ -1,12 +1,12 @@
-package de.hhu.bsinfo.dxapp.formats.split;
+package de.hhu.bsinfo.dxgraphloader.formats.splitter;
 
-import de.hhu.bsinfo.dxapp.data.FileChunk;
+import de.hhu.bsinfo.dxgraphloader.app.data.FileChunk;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 
-public class SkippingFileChunkCreator extends FileChunkCreator {
+public class SkippingLineSplitter extends FileChunkCreator {
 
     protected byte[] content;
     protected long bytesTotal;
@@ -15,7 +15,7 @@ public class SkippingFileChunkCreator extends FileChunkCreator {
     protected int chunkSize;
 
 
-    public SkippingFileChunkCreator(String file, int chunkSize) throws Exception {
+    public SkippingLineSplitter(String file, int chunkSize) throws Exception {
         randomAccessFile = new RandomAccessFile(file, "r");
         bytesTotal = randomAccessFile.length();
         this.chunkSize = chunkSize;
@@ -66,7 +66,7 @@ public class SkippingFileChunkCreator extends FileChunkCreator {
 
     @Override
     public int getApproxChunkAmount() {
-        return (int)(bytesTotal/chunkSize+1);
+        return (int)(bytesTotal/chunkSize+2);
     }
 
 }
