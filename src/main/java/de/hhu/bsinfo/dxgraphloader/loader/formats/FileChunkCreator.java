@@ -1,6 +1,6 @@
-package de.hhu.bsinfo.dxgraphloader.app.data.formats;
+package de.hhu.bsinfo.dxgraphloader.loader.formats;
 
-import de.hhu.bsinfo.dxgraphloader.app.data.FileChunk;
+import de.hhu.bsinfo.dxgraphloader.loader.data.FileChunk;
 
 public abstract class FileChunkCreator {
 

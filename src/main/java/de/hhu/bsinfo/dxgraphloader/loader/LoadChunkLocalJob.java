@@ -1,9 +1,9 @@
-package de.hhu.bsinfo.dxgraphloader.app;
+package de.hhu.bsinfo.dxgraphloader.loader;
 
 import de.hhu.bsinfo.dxgraphloader.GraphLoaderApp;
-import de.hhu.bsinfo.dxgraphloader.app.data.FileChunk;
-import de.hhu.bsinfo.dxgraphloader.app.data.PeerVertexMap;
-import de.hhu.bsinfo.dxgraphloader.app.data.formats.GraphFormatReader;
+import de.hhu.bsinfo.dxgraphloader.loader.data.FileChunk;
+import de.hhu.bsinfo.dxgraphloader.loader.data.PeerVertexMap;
+import de.hhu.bsinfo.dxgraphloader.loader.formats.GraphFormatReader;
 import de.hhu.bsinfo.dxram.boot.BootService;
 import de.hhu.bsinfo.dxram.chunk.ChunkLocalService;
 import de.hhu.bsinfo.dxram.chunk.ChunkService;

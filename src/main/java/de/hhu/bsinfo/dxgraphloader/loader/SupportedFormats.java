@@ -1,7 +1,7 @@
-package de.hhu.bsinfo.dxgraphloader.app;
+package de.hhu.bsinfo.dxgraphloader.loader;
 
 import de.hhu.bsinfo.dxgraphloader.formats.EdgeList;
-import de.hhu.bsinfo.dxgraphloader.app.data.formats.GraphFormat;
+import de.hhu.bsinfo.dxgraphloader.loader.formats.GraphFormat;
 import de.hhu.bsinfo.dxgraphloader.formats.JSONGraph;
 import de.hhu.bsinfo.dxgraphloader.formats.NeighborList;
 

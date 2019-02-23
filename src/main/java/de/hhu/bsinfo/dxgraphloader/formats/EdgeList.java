@@ -1,12 +1,10 @@
 package de.hhu.bsinfo.dxgraphloader.formats;
 
-import de.hhu.bsinfo.dxgraphloader.app.data.formats.GraphFormat;
 import de.hhu.bsinfo.dxgraphloader.formats.readers.EdgeListReader;
-import de.hhu.bsinfo.dxgraphloader.formats.splitter.SkippingLineSplitter;
+import de.hhu.bsinfo.dxgraphloader.formats.splitter.SkippingLineFileChunkCreator;
+import de.hhu.bsinfo.dxgraphloader.loader.formats.GraphFormat;
 
 public class EdgeList extends GraphFormat {
-
-    String file;
 
     public EdgeList(final String... files) {
         super(files);
@@ -14,15 +12,9 @@ public class EdgeList extends GraphFormat {
         CYCLES = 1;
 
         //suppors only single files
-        file = files[0];
-        try {
-            //key format properties
-            setFileChunkCreator(new SkippingLineSplitter(file, 16777216));
+        this.setFileChunkCreator(new SkippingLineFileChunkCreator(files[0], 16777216));
+        this.setGraphFormatReader(new EdgeListReader());
 
-            setGraphFormatReader(new EdgeListReader());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 }
 

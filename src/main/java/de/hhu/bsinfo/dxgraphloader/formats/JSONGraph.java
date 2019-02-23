@@ -1,8 +1,8 @@
 package de.hhu.bsinfo.dxgraphloader.formats;
 
-import de.hhu.bsinfo.dxgraphloader.app.data.formats.GraphFormat;
 import de.hhu.bsinfo.dxgraphloader.formats.readers.EdgeListReader;
-import de.hhu.bsinfo.dxgraphloader.formats.splitter.JSONGraphSplitter;
+import de.hhu.bsinfo.dxgraphloader.formats.splitter.JSONGraphFileChunkCreator;
+import de.hhu.bsinfo.dxgraphloader.loader.formats.GraphFormat;
 
 public class JSONGraph extends GraphFormat {
 
@@ -16,13 +16,8 @@ public class JSONGraph extends GraphFormat {
 
         //suppors only single files
         file = files[0];
-        try {
-            //key format properties
-            setFileChunkCreator(new JSONGraphSplitter(file, 16777216));
-
-            setGraphFormatReader(new EdgeListReader());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        //key format properties
+        this.setFileChunkCreator(new JSONGraphFileChunkCreator(file, 16777216));
+        this.setGraphFormatReader(new EdgeListReader());
     }
 }

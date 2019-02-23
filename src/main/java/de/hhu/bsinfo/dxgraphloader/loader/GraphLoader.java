@@ -1,11 +1,12 @@
-package de.hhu.bsinfo.dxgraphloader.app;
+package de.hhu.bsinfo.dxgraphloader.loader;
 
 import de.hhu.bsinfo.dxgraphloader.GraphLoaderApp;
-import de.hhu.bsinfo.dxgraphloader.app.data.ChunkIDArray;
-import de.hhu.bsinfo.dxgraphloader.app.data.FileChunk;
-import de.hhu.bsinfo.dxgraphloader.app.data.formats.FileChunkCreator;
-import de.hhu.bsinfo.dxgraphloader.app.data.formats.GraphFormat;
-import de.hhu.bsinfo.dxgraphloader.app.data.formats.GraphFormatReader;
+import de.hhu.bsinfo.dxgraphloader.loader.data.ChunkIDArray;
+import de.hhu.bsinfo.dxgraphloader.loader.data.DistributedObjectTable;
+import de.hhu.bsinfo.dxgraphloader.loader.data.FileChunk;
+import de.hhu.bsinfo.dxgraphloader.loader.formats.FileChunkCreator;
+import de.hhu.bsinfo.dxgraphloader.loader.formats.GraphFormat;
+import de.hhu.bsinfo.dxgraphloader.loader.formats.GraphFormatReader;
 import de.hhu.bsinfo.dxram.boot.BootService;
 import de.hhu.bsinfo.dxram.chunk.ChunkService;
 import de.hhu.bsinfo.dxram.job.AbstractJob;
@@ -35,14 +36,17 @@ public class GraphLoader {
     }
 
 
-    public boolean loadFormat(String format, String[] file_paths) {
+    public DistributedObjectTable loadFormat(String format, String[] file_paths) {
         return loadFormat(format, file_paths, 1);
     }
 
-    public boolean loadFormat(String format, String[] file_paths, int workerCount) {
+    public DistributedObjectTable loadFormat(String format, String[] file_paths, int workerCount) {
         //parse while reading excludes the reading peer!
         List<Short> peers;
         peers = bootService.getOnlinePeerNodeIDs();
+
+        //the distrubuted objecttable is a refererence to all vertices craeted ion the peers which are store in maps
+        DistributedObjectTable distributedObjectTable = new DistributedObjectTable(peers, chunkService);
 
         //available peers
         for (short p : peers) {
@@ -55,7 +59,8 @@ public class GraphLoader {
 
         if (graphFormat != null) {
 
-            //some formats need multiple cycles to resolve nodes and edges(typically first node creation and then create edges between)
+            //some formats need multiple cycles to resolve nodes and edges
+            //(typically first node creation and then create edges between)
             for (short cycle = 0; cycle < graphFormat.CYCLES; cycle++) {
                 if (cycle > 0) continue;
                 LOGGER.info("Started cycle '%s'!", cycle);
@@ -77,7 +82,7 @@ public class GraphLoader {
                             if (chunkService.create().create(p, fileChunk) != 1) {
                                 LOGGER.error("Failed again!");
                                 LOGGER.error("Probably other peers busy or not enough memory!");
-                                return false;
+                                return null;
                             }
                         }
 
@@ -87,7 +92,7 @@ public class GraphLoader {
                             if (!chunkService.put().put(fileChunk)) {
                                 LOGGER.error("Failed again!");
                                 LOGGER.error("Probably other peers busy or not enough memory!");
-                                return false;
+                                return null;
                             }
                         }
 
@@ -112,12 +117,17 @@ public class GraphLoader {
                 jobService.waitForLocalJobsToFinish();
             }
         }
-        return true;
+        return distributedObjectTable;
     }
 
     private void startJobsOnRemote(short p, long chunkIDArrayID, GraphFormatReader graphFormatReader) {
-        LOGGER.info("Pushing app " + LoadChunkManagerJob.class.getSimpleName() + " to " + Integer.toHexString(p).substring(4).toUpperCase() + "!");
-        AbstractJob abstractJob = jobService.createJobInstance(LoadChunkManagerJob.class.getCanonicalName(), chunkIDArrayID, graphFormatReader.getClass().getCanonicalName(), 4);
+
+        LOGGER.info("Pushing loader " + LoadChunkManagerJob.class.getSimpleName() + " to "
+                + Integer.toHexString(p).substring(4).toUpperCase() + "!");
+
+        AbstractJob abstractJob = jobService.createJobInstance(LoadChunkManagerJob.class.getCanonicalName(),
+                chunkIDArrayID, graphFormatReader.getClass().getCanonicalName(), 4);
+
         if (bootService.getNodeID() != p) {
             jobService.pushJobRemote(abstractJob, p);
         } else {

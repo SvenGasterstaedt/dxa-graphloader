@@ -1,19 +1,19 @@
 package de.hhu.bsinfo.dxgraphloader.formats.splitter;
 
-import de.hhu.bsinfo.dxgraphloader.app.data.FileChunk;
+import de.hhu.bsinfo.dxgraphloader.loader.data.FileChunk;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class NeighborLineSplitter extends SkippingLineSplitter {
+public class SkippingLineNumberFileChunkCreator extends SkippingLineFileChunkCreator {
 
     private final static Pattern p = Pattern.compile("\r\n|\r|\n");
 
     private long lineNumber = 0;
 
-    public NeighborLineSplitter(String file, int chunkSize) throws Exception {
+    public SkippingLineNumberFileChunkCreator(String file, int chunkSize){
         super(file, chunkSize);
     }
 
@@ -53,21 +53,6 @@ public class NeighborLineSplitter extends SkippingLineSplitter {
         }
         return null;
     }
-    /*
-    @Override
-    public FileChunk getNextChunk() {
-        StringBuilder builder = new StringBuilder();
-        try {
-            while (builder.length() * Character.BYTES < chunkSize && hasRemaining()) {
-                builder.append(lineNumber).append("\t").append(randomAccessFile.readLine().concat("\n"));
-                lineNumber++;
-            }
-            return new FileChunk(builder.toString().getBytes());
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-        return null;
-    }*/
 
     @Override
     public int getApproxChunkAmount() {

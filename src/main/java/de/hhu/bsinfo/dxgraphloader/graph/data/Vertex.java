@@ -35,6 +35,9 @@ public class Vertex extends AbstractChunk {
         System.arraycopy(edgeIDs,0,edges,edges.length,edgeIDs.length);
     }
 
+    public void mergeVertex(Vertex vertex){
+        this.addNeighbors(vertex.edges);
+    }
 
     @Override
     public void exportObject(Exporter exporter) {

@@ -2,15 +2,15 @@ package de.hhu.bsinfo.dxgraphloader.formats.splitter;
 
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
-import de.hhu.bsinfo.dxgraphloader.app.data.FileChunk;
-import de.hhu.bsinfo.dxgraphloader.app.data.formats.FileChunkCreator;
+import de.hhu.bsinfo.dxgraphloader.loader.data.FileChunk;
+import de.hhu.bsinfo.dxgraphloader.loader.formats.FileChunkCreator;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
-public class JSONGraphSplitter extends FileChunkCreator {
+public class JSONGraphFileChunkCreator extends FileChunkCreator {
 
     JsonReader reader;
 
@@ -23,7 +23,7 @@ public class JSONGraphSplitter extends FileChunkCreator {
     int chunkSize;
     String filePath;
 
-    public JSONGraphSplitter(final String filePath, final int chunkSize) {
+    public JSONGraphFileChunkCreator(final String filePath, final int chunkSize) {
         this.filePath = filePath;
         this.chunkSize = chunkSize;
     }

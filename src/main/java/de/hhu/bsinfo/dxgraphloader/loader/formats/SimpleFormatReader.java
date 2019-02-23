@@ -1,4 +1,4 @@
-package de.hhu.bsinfo.dxgraphloader.app.data.formats;
+package de.hhu.bsinfo.dxgraphloader.loader.formats;
 
 
 import de.hhu.bsinfo.dxgraphloader.graph.data.Vertex;

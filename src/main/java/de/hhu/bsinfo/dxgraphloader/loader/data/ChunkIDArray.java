@@ -1,10 +1,9 @@
-package de.hhu.bsinfo.dxgraphloader.app.data;
+package de.hhu.bsinfo.dxgraphloader.loader.data;
 
 import de.hhu.bsinfo.dxmem.data.AbstractChunk;
 import de.hhu.bsinfo.dxmem.data.ChunkID;
 import de.hhu.bsinfo.dxutils.serialization.Exporter;
 import de.hhu.bsinfo.dxutils.serialization.Importer;
-import de.hhu.bsinfo.dxutils.serialization.ObjectSizeUtil;
 
 import java.util.Arrays;
 

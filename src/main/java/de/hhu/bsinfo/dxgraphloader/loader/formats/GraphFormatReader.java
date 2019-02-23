@@ -1,6 +1,6 @@
-package de.hhu.bsinfo.dxgraphloader.app.data.formats;
+package de.hhu.bsinfo.dxgraphloader.loader.formats;
 
-import de.hhu.bsinfo.dxgraphloader.app.data.PeerVertexMap;
+import de.hhu.bsinfo.dxgraphloader.loader.data.PeerVertexMap;
 import de.hhu.bsinfo.dxram.chunk.ChunkService;
 
 public abstract class GraphFormatReader {

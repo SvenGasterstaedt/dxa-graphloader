@@ -1,6 +1,6 @@
 package de.hhu.bsinfo.dxgraphloader;
 
-import de.hhu.bsinfo.dxgraphloader.app.GraphLoader;
+import de.hhu.bsinfo.dxgraphloader.loader.GraphLoader;
 import de.hhu.bsinfo.dxram.app.AbstractApplication;
 import de.hhu.bsinfo.dxram.boot.BootService;
 import de.hhu.bsinfo.dxram.chunk.ChunkService;

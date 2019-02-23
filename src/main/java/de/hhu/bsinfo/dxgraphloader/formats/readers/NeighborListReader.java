@@ -1,7 +1,7 @@
 package de.hhu.bsinfo.dxgraphloader.formats.readers;
 
-import de.hhu.bsinfo.dxgraphloader.app.data.PeerVertexMap;
-import de.hhu.bsinfo.dxgraphloader.app.data.formats.SimpleFormatReader;
+import de.hhu.bsinfo.dxgraphloader.loader.data.PeerVertexMap;
+import de.hhu.bsinfo.dxgraphloader.loader.formats.SimpleFormatReader;
 import de.hhu.bsinfo.dxgraphloader.graph.data.Edge;
 import de.hhu.bsinfo.dxgraphloader.graph.data.Vertex;
 import de.hhu.bsinfo.dxram.chunk.ChunkService;
