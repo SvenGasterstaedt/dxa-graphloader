@@ -1,8 +1,9 @@
 package de.hhu.bsinfo.dxgraphloader.app;
 
 import de.hhu.bsinfo.dxgraphloader.GraphLoaderApp;
-import de.hhu.bsinfo.dxgraphloader.formats.parsers.GraphFormatReader;
 import de.hhu.bsinfo.dxgraphloader.app.data.FileChunk;
+import de.hhu.bsinfo.dxgraphloader.app.data.PeerVertexMap;
+import de.hhu.bsinfo.dxgraphloader.app.data.formats.GraphFormatReader;
 import de.hhu.bsinfo.dxram.boot.BootService;
 import de.hhu.bsinfo.dxram.chunk.ChunkLocalService;
 import de.hhu.bsinfo.dxram.chunk.ChunkService;
@@ -23,30 +24,25 @@ public class LoadChunkLocalJob extends AbstractJob {
 
     private Queue<Long> queue;
     private String classPath;
-    private boolean hasNext;
 
     private ChunkService chunkService;
     private ChunkLocalService chunkLocalService;
     private BootService bootService;
+    private PeerVertexMap peerVertexMap;
 
-    Lock lock;
+    private Lock lock;
 
-    public LoadChunkLocalJob(final Queue<Long> queue, final String classPath, final Lock lock) {
+    public LoadChunkLocalJob(final Queue<Long> queue, final String classPath, final Lock lock, final PeerVertexMap peerVertexMap) {
         this.queue = queue;
         this.classPath = classPath;
-        hasNext = true;
         this.lock = lock;
-
+        this.peerVertexMap = peerVertexMap;
     }
 
-    public void setServicesForLocal(final ChunkService chunkService,final ChunkLocalService chunkLocalService,final BootService bootService) {
+    public void setServicesForLocal(final ChunkService chunkService, final ChunkLocalService chunkLocalService, final BootService bootService) {
         this.chunkService = chunkService;
         this.chunkLocalService = chunkLocalService;
         this.bootService = bootService;
-    }
-
-    public void setHasNext(boolean value) {
-        hasNext = value;
     }
 
     @Override
@@ -61,30 +57,27 @@ public class LoadChunkLocalJob extends AbstractJob {
             return;
         }
 
-        do {
-            while (true) {
-                lock.lock();
-                if (queue.size() > 0) {
-                    long chunkID = queue.remove();
-                    lock.unlock();
+        while (true) {
+            lock.lock();
+            if (queue.size() > 0) {
+                long chunkID = queue.remove();
+                lock.unlock();
 
-                    FileChunk fileChunk = new FileChunk(chunkID);
-                    chunkLocalService.getLocal().get(fileChunk);
+                FileChunk fileChunk = new FileChunk(chunkID);
+                chunkLocalService.getLocal().get(fileChunk);
 
-                    try {
+                try {
 
-                        GraphFormatReader graphFormatReader = (GraphFormatReader) Class.forName(classPath).getConstructor().newInstance();
-                        graphFormatReader.execute(fileChunk.getContents(), chunkService, bootService.getNodeID());
-                        chunkService.remove().remove(fileChunk);
-                        LOGGER.debug(Long.toHexString(chunkID) + " loaded!");
+                    GraphFormatReader graphFormatReader = (GraphFormatReader) Class.forName(classPath).getConstructor().newInstance();
+                    graphFormatReader.execute(fileChunk.getContents(), chunkService, bootService.getNodeID(), peerVertexMap);
+                    LOGGER.debug(Long.toHexString(chunkID) + " loaded!");
 
-                    } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException | ClassNotFoundException e) {
-                        e.printStackTrace();
-                    }
-                } else {
-                    lock.unlock();
-                    break;
+                } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException | ClassNotFoundException e) {
+                    e.printStackTrace();
                 }
+            } else {
+                lock.unlock();
+                break;
             }
 
             try {
@@ -92,8 +85,7 @@ public class LoadChunkLocalJob extends AbstractJob {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            LOGGER.warn("Still alive!");
-        }while( hasNext);
+        }
         LOGGER.debug("Finished Load Chunk!");
 
     }

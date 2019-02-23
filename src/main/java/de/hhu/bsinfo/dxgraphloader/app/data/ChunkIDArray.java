@@ -11,42 +11,36 @@ import java.util.Arrays;
 public class ChunkIDArray extends AbstractChunk {
 
     private long[] ids;
-    private boolean hasNext;
-    int pos = 0;
 
-    public ChunkIDArray(long chunkId) {
+    public ChunkIDArray(final long chunkId) {
         super();
         setID(chunkId);
-        hasNext = true;
     }
 
-    public ChunkIDArray(int size) {
-        super();
-        ids = new long[size];
-        Arrays.fill(ids, ChunkID.INVALID_ID);
-        hasNext = true;
+    public ChunkIDArray(final long[] ids) {
+        this.ids = ids;
     }
 
-    public void addID(long id) {
-        ids[pos] = id;
-        pos++;
+    public ChunkIDArray(final Long[] ids) {
+        this.ids = new long[ids.length];
+        for(int i = 0; i < ids.length; i++){
+            this.ids[i] = ids[i];
+        }
     }
 
-    public long getChunkID(int pos) {
-        return ids[pos];
+    public long getChunkID(int index) {
+        if(index > -1 && index < ids.length){
+            return ids[index];
+        }
+        return ChunkID.INVALID_ID;
     }
 
-    public boolean hasNext() {
-        return hasNext;
-    }
-
-    public void setHasNext(boolean value) {
-        hasNext = value;
+    public long[] getIds(){
+        return ids;
     }
 
     @Override
-    public void exportObject(Exporter p_exporter) {
-        p_exporter.writeBoolean(hasNext);
+    public void exportObject(final Exporter p_exporter) {
         p_exporter.writeInt(ids.length);
         for (long t_id : ids) {
             p_exporter.writeLong(t_id);
@@ -54,12 +48,11 @@ public class ChunkIDArray extends AbstractChunk {
     }
 
     @Override
-    public void importObject(Importer p_importer) {
-        hasNext = p_importer.readBoolean(hasNext);
+    public void importObject(final Importer p_importer) {
         int size = 0;
         size = p_importer.readInt(size);
         ids = new long[size];
-        Arrays.fill(ids,ChunkID.INVALID_ID);
+        Arrays.fill(ids, ChunkID.INVALID_ID);
         for (int i = 0; i < size; i++) {
             ids[i] = p_importer.readLong(ids[i]);
         }
@@ -67,6 +60,6 @@ public class ChunkIDArray extends AbstractChunk {
 
     @Override
     public int sizeofObject() {
-        return Integer.BYTES + Long.BYTES * ids.length + ObjectSizeUtil.sizeofBoolean();
+        return Integer.BYTES + Long.BYTES * ids.length;
     }
 }

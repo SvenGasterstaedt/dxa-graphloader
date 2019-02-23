@@ -22,8 +22,12 @@ public class Edge extends AbstractChunk {
         return from;
     }
 
-    public void setFrom(long from) {
-        this.from = from;
+    public void setEndPoint(Vertex start, Vertex end){
+        from = start.getID();
+        to = end.getID();
+
+        start.addNeighbor(this.getID());
+        end.addNeighbor(this.getID());
     }
 
     public long getTo() {

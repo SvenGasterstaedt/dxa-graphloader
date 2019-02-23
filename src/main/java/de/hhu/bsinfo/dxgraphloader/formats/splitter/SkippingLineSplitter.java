@@ -1,9 +1,11 @@
 package de.hhu.bsinfo.dxgraphloader.formats.splitter;
 
 import de.hhu.bsinfo.dxgraphloader.app.data.FileChunk;
+import de.hhu.bsinfo.dxgraphloader.app.data.formats.FileChunkCreator;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 public class SkippingLineSplitter extends FileChunkCreator {
@@ -36,6 +38,7 @@ public class SkippingLineSplitter extends FileChunkCreator {
         return (bytesTotal - randomAccessFile.getFilePointer());
     }
 
+
     @Override
     public FileChunk getNextChunk() {
         try {
@@ -49,13 +52,11 @@ public class SkippingLineSplitter extends FileChunkCreator {
                 content = new byte[chunkSize];
                 randomAccessFile.read(content);
 
+                byte[] remainingLine = new byte[0];
                 if (hasRemaining()) {
-                    //byte b = randomAccessFile.read();
-                    byte[] remainingLine = randomAccessFile.readLine().concat("\n").getBytes();
-                    content = Arrays.copyOf(content, content.length + remainingLine.length);
-                    System.arraycopy(remainingLine, 0, content, content.length - remainingLine.length, remainingLine.length);
+                    remainingLine = randomAccessFile.readLine().concat("\n").getBytes();
                 }
-
+                content = ByteBuffer.allocate(content.length + remainingLine.length).put(content).put(remainingLine).array();
                 return new FileChunk(content);
             }
         } catch (IOException ex) {
@@ -67,6 +68,11 @@ public class SkippingLineSplitter extends FileChunkCreator {
     @Override
     public int getApproxChunkAmount() {
         return (int)(bytesTotal/chunkSize+2);
+    }
+
+    @Override
+    public void setCycle(short cycle) {
+
     }
 
 }

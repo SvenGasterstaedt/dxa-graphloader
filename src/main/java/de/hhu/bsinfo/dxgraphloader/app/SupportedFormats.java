@@ -1,4 +1,9 @@
-package de.hhu.bsinfo.dxgraphloader.formats;
+package de.hhu.bsinfo.dxgraphloader.app;
+
+import de.hhu.bsinfo.dxgraphloader.formats.EdgeList;
+import de.hhu.bsinfo.dxgraphloader.app.data.formats.GraphFormat;
+import de.hhu.bsinfo.dxgraphloader.formats.JSONGraph;
+import de.hhu.bsinfo.dxgraphloader.formats.NeighborList;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -13,9 +18,9 @@ public class SupportedFormats{
     }
 
     public SupportedFormats(){
-        formats.put("EDGEFILE", EdgeListFormat.class);
-        formats.put("NEIGHBORLIST", GraphFormat.class);
-        formats.put("ADJENCYMATRIX", GraphFormat.class);
+        formats.put("EDGE", EdgeList.class);
+        formats.put("NEIGHBOR", NeighborList.class);
+        formats.put("JSON", JSONGraph.class);
         formats.put("GRAPHML", GraphFormat.class);
     }
 

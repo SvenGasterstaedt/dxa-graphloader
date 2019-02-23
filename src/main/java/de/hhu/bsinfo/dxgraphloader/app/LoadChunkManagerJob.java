@@ -2,7 +2,8 @@ package de.hhu.bsinfo.dxgraphloader.app;
 
 import de.hhu.bsinfo.dxgraphloader.GraphLoaderApp;
 import de.hhu.bsinfo.dxgraphloader.app.data.ChunkIDArray;
-import de.hhu.bsinfo.dxmem.data.ChunkID;
+import de.hhu.bsinfo.dxgraphloader.app.data.PeerVertexMap;
+import de.hhu.bsinfo.dxgraphloader.graph.data.Vertex;
 import de.hhu.bsinfo.dxram.boot.BootService;
 import de.hhu.bsinfo.dxram.chunk.ChunkLocalService;
 import de.hhu.bsinfo.dxram.chunk.ChunkService;
@@ -22,8 +23,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static java.lang.Thread.sleep;
-
 
 public class LoadChunkManagerJob extends AbstractJob {
 
@@ -34,10 +33,11 @@ public class LoadChunkManagerJob extends AbstractJob {
     private String classPath;
     private int workerCount;
 
+    private PeerVertexMap peerVertexMap = new PeerVertexMap();
+
     public LoadChunkManagerJob() {
         super();
     }
-
 
     public LoadChunkManagerJob(long chunkID, String graphLoader, int workerCount) {
         this.chunkArrayID = chunkID;
@@ -66,44 +66,29 @@ public class LoadChunkManagerJob extends AbstractJob {
         Lock lock = new ReentrantLock(true);
 
 
+        long[] chunkIDs = chunkIDArray.getIds();
+
+        for (long id : chunkIDs) {
+            chunkList.add(id);
+            LOGGER.debug(Long.toHexString(id) + " added to queue!");
+        }
+        chunkService.remove().remove(chunkIDArray);
+
         for (int i = 0; i < workerCount - 1; i++) {
-            LoadChunkLocalJob abstractJob = new LoadChunkLocalJob(chunkList, classPath, lock);
+            LoadChunkLocalJob abstractJob = new LoadChunkLocalJob(chunkList, classPath, lock, peerVertexMap);
             jobList.add(abstractJob);
             jobService.pushJob(abstractJob);
         }
 
-        int pos = 0;
-        boolean hasNext = true;
-        long chunkID = ChunkID.INVALID_ID;
-        while (hasNext || chunkID != ChunkID.INVALID_ID) {
-            if (chunkID != ChunkID.INVALID_ID) {
-                pos++;
-                chunkList.add(chunkID);
-                LOGGER.debug(Long.toHexString(chunkID) + " added to queue!");
-
-            } else {
-                try {
-                    sleep(100);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                chunkLocalService.getLocal().get(chunkIDArray);
-            }
-            chunkID = chunkIDArray.getChunkID(pos);
-            hasNext = chunkIDArray.hasNext();
-        }
-        chunkService.remove().remove(chunkIDArray);
-
-        LoadChunkLocalJob localJob = new LoadChunkLocalJob(chunkList, classPath, lock);
+        LoadChunkLocalJob localJob = new LoadChunkLocalJob(chunkList, classPath, lock, peerVertexMap);
         localJob.setServicesForLocal(chunkService, chunkLocalService, bootService);
         jobList.add(localJob);
-
-        for (LoadChunkLocalJob job : jobList) {
-            job.setHasNext(false);
-        }
-
         localJob.execute();
 
+        Vertex[] vertices = peerVertexMap.values().stream().map(Vertex::new).toArray(Vertex[]::new);
+        //resize duo to changing neighbor amount.
+        chunkService.resize().resize(vertices);
+        chunkService.put().put(vertices);
         LOGGER.debug("Finished Loading Chunks!");
     }
 
