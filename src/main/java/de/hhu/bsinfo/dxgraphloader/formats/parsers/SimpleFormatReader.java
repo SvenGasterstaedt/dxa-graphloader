@@ -1,4 +1,4 @@
-package de.hhu.bsinfo.dxapp.formats.parsers;
+package de.hhu.bsinfo.dxgraphloader.formats.parsers;
 
 
 import java.io.BufferedReader;

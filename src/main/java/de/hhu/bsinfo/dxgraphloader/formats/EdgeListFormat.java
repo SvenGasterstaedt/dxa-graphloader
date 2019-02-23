@@ -1,7 +1,7 @@
-package de.hhu.bsinfo.dxapp.formats;
+package de.hhu.bsinfo.dxgraphloader.formats;
 
-import de.hhu.bsinfo.dxapp.formats.parsers.EdgeListReader;
-import de.hhu.bsinfo.dxapp.formats.split.SkippingFileChunkCreator;
+import de.hhu.bsinfo.dxgraphloader.formats.parsers.EdgeListReader;
+import de.hhu.bsinfo.dxgraphloader.formats.splitter.SkippingLineSplitter;
 
 public class EdgeListFormat extends GraphFormat {
 
@@ -11,7 +11,7 @@ public class EdgeListFormat extends GraphFormat {
         super(files);
         file = files[0];
         try {
-            fileChunkCreator = new SkippingFileChunkCreator(file, 4096*1024);
+            fileChunkCreator = new SkippingLineSplitter(file, 16777216);
             formatReader = new EdgeListReader();
         } catch (Exception e) {
             e.printStackTrace();
