@@ -7,6 +7,7 @@ import de.hhu.bsinfo.dxgraphloader.loader.data.FileChunk;
 import de.hhu.bsinfo.dxgraphloader.loader.formats.FileChunkCreator;
 import de.hhu.bsinfo.dxgraphloader.loader.formats.GraphFormat;
 import de.hhu.bsinfo.dxgraphloader.loader.formats.GraphFormatReader;
+import de.hhu.bsinfo.dxgraphloader.util.IDUtils;
 import de.hhu.bsinfo.dxram.boot.BootService;
 import de.hhu.bsinfo.dxram.chunk.ChunkService;
 import de.hhu.bsinfo.dxram.job.AbstractJob;
@@ -27,6 +28,8 @@ public class GraphLoader {
     private final ChunkService chunkService;
     public final SupportedFormats supportedFormats = new SupportedFormats();
 
+    private DistributedObjectTable distributedObjectTable;
+
 
     //Setting up services
     public GraphLoader(final BootService bootService, final JobService jobService, final ChunkService chunkService) {
@@ -46,7 +49,9 @@ public class GraphLoader {
         peers = bootService.getOnlinePeerNodeIDs();
 
         //the distrubuted objecttable is a refererence to all vertices craeted ion the peers which are store in maps
-        DistributedObjectTable distributedObjectTable = new DistributedObjectTable(peers, chunkService);
+        distributedObjectTable = new DistributedObjectTable(peers, chunkService);
+        chunkService.create().create(bootService.getNodeID(), distributedObjectTable);
+        chunkService.put().put(distributedObjectTable);
 
         //available peers
         for (short p : peers) {
@@ -63,7 +68,7 @@ public class GraphLoader {
             //(typically first node creation and then create edges between)
             for (short cycle = 0; cycle < graphFormat.CYCLES; cycle++) {
                 if (cycle > 0) continue;
-                LOGGER.info("Started cycle '%s'!", cycle);
+                LOGGER.info("Started cycle '%s' from '%s'!", cycle+1,graphFormat.CYCLES);
 
                 chunkCreator = graphFormat.getFileChunkCreator(cycle);
 
@@ -86,7 +91,7 @@ public class GraphLoader {
                             }
                         }
 
-                        LOGGER.debug("Chunk ID: " + Long.toHexString(fileChunk.getID()));
+                        //LOGGER.debug("Chunk ID: " + Long.toHexString(fileChunk.getID()));
                         if (!chunkService.put().put(fileChunk)) {
                             LOGGER.warn("Putting failed, 2nd try!");
                             if (!chunkService.put().put(fileChunk)) {
@@ -103,16 +108,18 @@ public class GraphLoader {
                         }
                     }
                 }
-
                 //push chunk ids to peers
-                ChunkIDArray[] chunkIDArray = new ChunkIDArray[peers.size()];
-                for (int i = 0; i < peers.size(); i++) {
-                    chunkIDArray[i] = new ChunkIDArray(peerChunkList.get(i).toArray(new Long[0]));
-                    chunkService.create().create(peers.get(i), chunkIDArray[i]);
-                    chunkService.put().put(chunkIDArray[i]);
+                {
+                    ChunkIDArray[] chunkIDArray = new ChunkIDArray[peers.size()];
+                    for (int i = 0; i < peers.size(); i++) {
+                        chunkIDArray[i] = new ChunkIDArray(peerChunkList.get(i).toArray(new Long[0]));
+                        chunkService.create().create(peers.get(i), chunkIDArray[i]);
+                        chunkService.put().put(chunkIDArray[i]);
 
-                    //start jobs (local and remote)
-                    startJobsOnRemote(peers.get(i), chunkIDArray[i].getID(), graphFormat.getGraphFormatReader());
+                        //start jobs (local and remote)
+                        startJobsOnRemote(peers.get(i), chunkIDArray[i].getID(), graphFormat.getGraphFormatReader());
+                    }
+                    LOGGER.info("Created %s chunks per peer!", chunkIDArray[0].getIds().length);
                 }
                 jobService.waitForLocalJobsToFinish();
             }
@@ -120,18 +127,25 @@ public class GraphLoader {
         return distributedObjectTable;
     }
 
-    private void startJobsOnRemote(short p, long chunkIDArrayID, GraphFormatReader graphFormatReader) {
+    private void startJobsOnRemote(short p, long chunkIDArrayID, Class<? extends GraphFormatReader> graphFormatReader) {
 
         LOGGER.info("Pushing loader " + LoadChunkManagerJob.class.getSimpleName() + " to "
-                + Integer.toHexString(p).substring(4).toUpperCase() + "!");
+                + IDUtils.shortToHexString(p) + "!");
 
-        AbstractJob abstractJob = jobService.createJobInstance(LoadChunkManagerJob.class.getCanonicalName(),
-                chunkIDArrayID, graphFormatReader.getClass().getCanonicalName(), 4);
+        AbstractJob abstractJob = jobService.createJobInstance(LoadChunkManagerJob.class.getCanonicalName(), distributedObjectTable.getID(),
+                chunkIDArrayID, graphFormatReader.getCanonicalName(), 4);
 
         if (bootService.getNodeID() != p) {
             jobService.pushJobRemote(abstractJob, p);
         } else {
             jobService.pushJob(abstractJob);
+        }
+    }
+
+    public void setDistributedObjectTable(long id) throws Exception {
+        distributedObjectTable = new DistributedObjectTable(id);
+        if (!chunkService.get().get(distributedObjectTable)) {
+            throw new Exception("Couldn't load distributed object table!");
         }
     }
 }

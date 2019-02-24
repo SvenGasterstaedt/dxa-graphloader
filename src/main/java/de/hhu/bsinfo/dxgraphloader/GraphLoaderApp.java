@@ -68,7 +68,8 @@ public class GraphLoaderApp extends AbstractApplication {
                 return;
             }
         }
-        graphLoader.loadFormat(format,file_paths,numWorkers);
+        //prints id of the distrubuted object table
+        System.out.println(graphLoader.loadFormat(format,file_paths,numWorkers).getID());
     }
 
     @Override

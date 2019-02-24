@@ -1,40 +1,39 @@
 package de.hhu.bsinfo.dxgraphloader.formats.readers;
 
-import de.hhu.bsinfo.dxgraphloader.loader.data.PeerVertexMap;
-import de.hhu.bsinfo.dxgraphloader.loader.formats.SimpleFormatReader;
-import de.hhu.bsinfo.dxgraphloader.graph.data.Edge;
 import de.hhu.bsinfo.dxgraphloader.graph.data.Vertex;
+import de.hhu.bsinfo.dxgraphloader.loader.data.DistributedObjectTable;
+import de.hhu.bsinfo.dxgraphloader.loader.data.PeerVertexMap;
+import de.hhu.bsinfo.dxgraphloader.loader.formats.GraphFormatReader;
+import de.hhu.bsinfo.dxram.boot.BootService;
+import de.hhu.bsinfo.dxram.chunk.ChunkLocalService;
 import de.hhu.bsinfo.dxram.chunk.ChunkService;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.locks.Lock;
 
 @SuppressWarnings("Duplicates")
-public class NeighborListReader extends SimpleFormatReader {
+public class NeighborListReader extends GraphFormatReader {
+
+    public NeighborListReader(DistributedObjectTable distributedObjectTable) {
+        super(distributedObjectTable);
+    }
 
     @Override
-    public boolean execute(byte[] content, final ChunkService chunkService, final short current_peer, PeerVertexMap peerVertexMap) {
-        Map<String, Vertex> vertexMap = new HashMap<String, Vertex>();
+    public boolean execute(byte[] content) {
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(content)));
         try {
-
             while (bufferedReader.ready()) {
                 String line = bufferedReader.readLine();
                 if (line.charAt(0) == '#') continue;
 
                 String[] key = line.split("\t");
-                Vertex vertex1 = keyToVertex(chunkService,current_peer,vertexMap,key[0]);
+                createVertex(key[0],Vertex.class, "");
 
                 for (int i = 1; i < key.length; i++) {
-                    Vertex vertex2 = keyToVertex(chunkService,current_peer,vertexMap,key[0]);
-                    Edge edge = new Edge();
-                    chunkService.create().create(current_peer, edge);
-                    edge.setEndPoint(vertex1,vertex2);
-                    chunkService.put().put(edge);
+                    createVertex(key[i],Vertex.class, "");
                 }
             }
         } catch (

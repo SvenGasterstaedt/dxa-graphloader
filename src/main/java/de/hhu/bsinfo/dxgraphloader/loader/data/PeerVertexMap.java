@@ -14,10 +14,12 @@ import java.util.concurrent.ConcurrentMap;
 
 public class PeerVertexMap extends AbstractChunk implements ConcurrentMap<String, Long> {
 
-    ConcurrentHashMap<String, Long> map;
+    ConcurrentHashMap<String, Long> map = new ConcurrentHashMap<>();
 
-    public PeerVertexMap() {
-        map = new ConcurrentHashMap<>();
+    public PeerVertexMap(){}
+
+    public PeerVertexMap(long id){
+        setID(id);
     }
 
     public Long put(String string, Long aLong) {

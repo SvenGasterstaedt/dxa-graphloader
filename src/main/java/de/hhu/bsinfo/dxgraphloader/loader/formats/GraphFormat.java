@@ -2,7 +2,7 @@ package de.hhu.bsinfo.dxgraphloader.loader.formats;
 
 public abstract class GraphFormat {
     FileChunkCreator fileChunkCreator;
-    GraphFormatReader formatReader;
+    Class<? extends GraphFormatReader> formatReader;
     String[] files;
 
     public short CYCLES;
@@ -17,11 +17,11 @@ public abstract class GraphFormat {
     }
 
 
-    public GraphFormatReader getGraphFormatReader() {
+    public Class<? extends GraphFormatReader> getGraphFormatReader() {
         return formatReader;
     }
 
-    public void setGraphFormatReader(GraphFormatReader formatReader){
+    public void setGraphFormatReader(Class<? extends GraphFormatReader> formatReader){
         this.formatReader = formatReader;
     }
 

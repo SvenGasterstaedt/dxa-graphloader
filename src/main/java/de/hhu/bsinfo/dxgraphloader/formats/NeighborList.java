@@ -14,7 +14,7 @@ public class NeighborList extends GraphFormat {
         CYCLES = 1;
 
         this.setFileChunkCreator(new SkippingLineNumberFileChunkCreator(files[0], 16777216));
-        this.setGraphFormatReader(new NeighborListReader());
+        this.setGraphFormatReader(NeighborListReader.class);
     }
 }
 

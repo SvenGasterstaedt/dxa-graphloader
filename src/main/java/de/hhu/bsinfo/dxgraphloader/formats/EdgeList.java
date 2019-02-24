@@ -13,7 +13,7 @@ public class EdgeList extends GraphFormat {
 
         //suppors only single files
         this.setFileChunkCreator(new SkippingLineFileChunkCreator(files[0], 16777216));
-        this.setGraphFormatReader(new EdgeListReader());
+        this.setGraphFormatReader(EdgeListReader.class);
 
     }
 }

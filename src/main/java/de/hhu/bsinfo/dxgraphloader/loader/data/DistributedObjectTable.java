@@ -1,5 +1,6 @@
 package de.hhu.bsinfo.dxgraphloader.loader.data;
 
+import de.hhu.bsinfo.dxgraphloader.util.IDUtils;
 import de.hhu.bsinfo.dxmem.data.AbstractChunk;
 import de.hhu.bsinfo.dxram.chunk.ChunkService;
 import de.hhu.bsinfo.dxutils.serialization.Exporter;
@@ -10,7 +11,7 @@ import java.util.*;
 public class DistributedObjectTable extends AbstractChunk {
 
     HashMap<Short, Long> listPeerMaps = new HashMap<>();
-    List<Short> peers;
+    List<Short> peers = new ArrayList<>();
 
     public DistributedObjectTable(long id){
         setID(id);
@@ -21,8 +22,17 @@ public class DistributedObjectTable extends AbstractChunk {
         for (short p : peers) {
             PeerVertexMap peerVertexMap = new PeerVertexMap();
             chunkService.create().create(p, peerVertexMap);
+            chunkService.put().put(peerVertexMap);
             listPeerMaps.put(p, peerVertexMap.getID());
         }
+    }
+
+    public int getPeerSize(){
+        return peers.size();
+    }
+
+    public int getPeerPos(short peer){
+        return peers.indexOf(peer);
     }
 
     public Map.Entry<Short, Long> getNodeAndMapId(int mod) {
@@ -31,7 +41,11 @@ public class DistributedObjectTable extends AbstractChunk {
     }
 
     public short getNode(int mod) {
-        return peers.get(mod);
+        return peers.get(Math.abs(mod));
+    }
+
+    public long getMap(short node) {
+        return listPeerMaps.get(node);
     }
 
     @Override
@@ -56,11 +70,9 @@ public class DistributedObjectTable extends AbstractChunk {
         for (int i = 0; i < size; i++) {
             s = p_importer.readShort(s);
             l = p_importer.readLong(l);
-
             listPeerMaps.put(s,l);
         }
         size = p_importer.readInt(size);
-        peers = new ArrayList<>(size);
         for(int i = 0; i < size; i++){
             s = p_importer.readShort(s);
             peers.add(s);

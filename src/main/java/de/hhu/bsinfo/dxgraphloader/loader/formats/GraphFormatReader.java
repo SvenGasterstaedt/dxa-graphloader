@@ -1,18 +1,43 @@
 package de.hhu.bsinfo.dxgraphloader.loader.formats;
 
-import de.hhu.bsinfo.dxgraphloader.loader.data.PeerVertexMap;
-import de.hhu.bsinfo.dxram.chunk.ChunkService;
+import de.hhu.bsinfo.dxgraphloader.graph.data.Edge;
+import de.hhu.bsinfo.dxgraphloader.graph.data.Vertex;
+import de.hhu.bsinfo.dxgraphloader.loader.data.DistributedObjectTable;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 public abstract class GraphFormatReader {
 
-    private ChunkService chunkService;
+    private DistributedObjectTable distributedObjectTable;
+    private List<Set<String>> vertices = new ArrayList<>();
+    private Set<Edge> edges = new HashSet<>();
 
-    public GraphFormatReader() {
+
+    public GraphFormatReader(DistributedObjectTable distributedObjectTable) {
+        this.distributedObjectTable = distributedObjectTable;
+        for (int i = 0; i < distributedObjectTable.getPeerSize(); i++) {
+            vertices.add(new ConcurrentSkipListSet<>());
+        }
     }
 
-    public abstract boolean execute(final byte[] content, final ChunkService chunkService, final short current_peer, PeerVertexMap peerVertexMap);
+    public abstract boolean execute(final byte[] content);
 
-    public void createVertex(String key){
 
+
+    protected void createVertex(String id, Class<? extends Vertex> vertex, String... v_args) {
+        short value = distributedObjectTable.getNode(id.hashCode() % distributedObjectTable.getPeerSize());
+        vertices.get(distributedObjectTable.getPeerPos(value)).add(id);
+    }
+
+    public List<Set<String>> getVertices() {
+        return vertices;
+    }
+
+    public Set<Edge> getEdges() {
+        return edges;
     }
 }

@@ -18,6 +18,6 @@ public class JSONGraph extends GraphFormat {
         file = files[0];
         //key format properties
         this.setFileChunkCreator(new JSONGraphFileChunkCreator(file, 16777216));
-        this.setGraphFormatReader(new EdgeListReader());
+        this.setGraphFormatReader(EdgeListReader.class);
     }
 }
