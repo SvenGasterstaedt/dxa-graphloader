@@ -21,7 +21,7 @@ public class GraphFormat {
     private Class<? extends AbstractGraphFormatReader> m_formatReader;
     private String[] m_files;
 
-    public short m_cycles;
+    private short m_cycles;
 
     public GraphFormat(final String... p_files) {
         m_files = p_files;
@@ -44,6 +44,14 @@ public class GraphFormat {
     @SuppressWarnings("WeakerAccess")
     public void setFileChunkCreator(AbstractFileChunkCreator p_fileChunkCreator) {
         m_fileChunkCreator = p_fileChunkCreator;
+    }
+
+    public short getCycles() {
+        return m_cycles;
+    }
+
+    public void setCycles(short p_cycles) {
+        m_cycles = p_cycles;
     }
 }
 

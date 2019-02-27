@@ -24,7 +24,7 @@ public class NeighborList extends GraphFormat {
     public NeighborList(final String... p_files) {
         super(p_files);
 
-        m_cycles = 1;
+        setCycles((short) 1);
 
         setFileChunkCreator(new SkippingLineNumberFileChunkCreator(p_files[0], 16777216));
         setGraphFormatReader(NeighborListReader.class);

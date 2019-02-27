@@ -27,8 +27,9 @@ import de.hhu.bsinfo.dxgraphloader.loader.data.FileChunk;
 import de.hhu.bsinfo.dxgraphloader.loader.data.GraphObject;
 import de.hhu.bsinfo.dxgraphloader.loader.data.LongArray;
 import de.hhu.bsinfo.dxgraphloader.loader.formats.AbstractFileChunkCreator;
-import de.hhu.bsinfo.dxgraphloader.loader.formats.GraphFormat;
 import de.hhu.bsinfo.dxgraphloader.loader.formats.AbstractGraphFormatReader;
+import de.hhu.bsinfo.dxgraphloader.loader.formats.GraphFormat;
+import de.hhu.bsinfo.dxgraphloader.util.Barrier;
 import de.hhu.bsinfo.dxgraphloader.util.IDUtils;
 import de.hhu.bsinfo.dxram.boot.BootService;
 import de.hhu.bsinfo.dxram.chunk.ChunkService;
@@ -102,14 +103,14 @@ public final class GraphLoader {
      *
      * @param p_format
      *         Format string matching one of the supported formats - see this.supportedFormat.
-     * @param p_filepaths
+     * @param p_filenames
      *         Paths to the files to be loaded / For multiple file loading rerun this function.
      * @param p_workerCount
      *         Sets the value how much jobs, will be created on each peer. (Threads).
      *         This amount can't exceed the value in the configuration of the JobComponent
      * @return A Graph object
      */
-    public GraphObject loadFormat(String p_format, String[] p_filepaths, int p_workerCount) {
+    public GraphObject loadFormat(String p_format, String[] p_filenames, int p_workerCount) {
         //parse while reading excludes the reading peer!
         List<Short> peers = m_boot.getOnlinePeerNodeIDs();
 
@@ -119,25 +120,18 @@ public final class GraphLoader {
         m_chunk.put().put(m_graph);
 
         //graph format if supported != null
-        GraphFormat graphFormat = m_formats.getFormat(p_format, p_filepaths);
+        GraphFormat graphFormat = m_formats.getFormat(p_format, p_filenames);
         AbstractFileChunkCreator chunkCreator;
 
         if (graphFormat != null) {
-
             //some formats need multiple cycles to resolve nodes and edges
             //(typically first node creation and then create edges between)
-            for (short cycle = 0; cycle < graphFormat.m_cycles; cycle++) {
+            for (short cycleCount = 0; cycleCount < 2; cycleCount++) {
 
-                if (cycle > 0) {
+                LOGGER.info("Started cycle '%s' from '%s'!", cycleCount + 1, graphFormat.getCycles());
 
-                    continue;
-                }
-                LOGGER.info("Started cycle '%s' from '%s'!", cycle + 1, graphFormat.m_cycles);
-
-                chunkCreator = graphFormat.getFileChunkCreator(cycle);
-
+                chunkCreator = graphFormat.getFileChunkCreator(cycleCount);
                 List<List<Long>> peerChunkList = new ArrayList<>();
-
                 for (short ignored : peers) {
                     peerChunkList.add(new ArrayList<Long>());
                 }
@@ -158,7 +152,7 @@ public final class GraphLoader {
                             }
                         }
 
-                        //LOGGER.debug("Chunk ID: " + Long.toHexString(fileChunk.getID()));
+                        LOGGER.debug("Chunk created: '%s'!", Long.toHexString(fileChunk.getID()));
                         if (!m_chunk.put().put(fileChunk)) {
 
                             LOGGER.warn("Putting failed, 2nd try!");
@@ -178,12 +172,8 @@ public final class GraphLoader {
                     }
                 }
                 //push chunk ids to peers
-                int cycleBarrier = m_sync.barrierAllocate(peers.size());
-                m_sync.barrierGetStatus(cycleBarrier);
-                m_name.register(cycleBarrier, CYCLE_LOCK);
-                int loadBarrier = m_sync.barrierAllocate(peers.size());
-                m_sync.barrierGetStatus(loadBarrier);
-                m_name.register(loadBarrier, LOAD_LOCK);
+                int cycleBarrier = Barrier.createBarrier(CYCLE_LOCK, peers.size(), m_sync, m_name);
+                int loadBarrier = Barrier.createBarrier(LOAD_LOCK, peers.size(), m_sync, m_name);
 
                 {
                     LongArray[] longArray = new LongArray[peers.size()];
@@ -195,7 +185,7 @@ public final class GraphLoader {
 
                         //start jobs (local and remote)
                         startJobsOnRemote(peers.get(i), longArray[i].getID(), graphFormat.getGraphFormatReader(),
-                                p_workerCount);
+                                p_workerCount, cycleCount);
                     }
                 }
                 m_job.waitForLocalJobsToFinish();
@@ -206,15 +196,16 @@ public final class GraphLoader {
         return m_graph;
     }
 
-    private void startJobsOnRemote(short p_peer, long p_arrayID, Class<? extends AbstractGraphFormatReader> p_formatReader,
-            int p_workerCount) {
+    private void startJobsOnRemote(short p_peer, long p_arrayID,
+            Class<? extends AbstractGraphFormatReader> p_formatReader,
+            int p_workerCount, int p_cycle) {
 
         LOGGER.info("Pushing loader '%s' to '%s'!",
                 LoadChunkManagerJob.class.getSimpleName(), IDUtils.shortToHexString(p_peer));
 
         AbstractJob abstractJob = m_job.createJobInstance(LoadChunkManagerJob.class.getCanonicalName(),
                 m_graph.getID(),
-                p_arrayID, p_formatReader.getCanonicalName(), p_workerCount);
+                p_arrayID, p_formatReader.getCanonicalName(), p_workerCount, p_cycle);
 
         if (m_boot.getNodeID() != p_peer) {
             m_job.pushJobRemote(abstractJob, p_peer);
@@ -226,5 +217,6 @@ public final class GraphLoader {
     public SupportedFormats getFormats() {
         return m_formats;
     }
+
 }
 

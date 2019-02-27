@@ -72,4 +72,14 @@ public class SkippingLineNumberFileChunkCreator extends SkippingLineFileChunkCre
         }
         return null;
     }
+
+    @Override
+    public void setCycle(short p_cycle) {
+        m_cycle = p_cycle;
+        try {
+            m_file.seek(0);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

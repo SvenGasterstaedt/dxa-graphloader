@@ -25,8 +25,7 @@ public class EdgeList extends GraphFormat {
     public EdgeList(final String... p_files) {
         super(p_files);
 
-        m_cycles = 1;
-
+        setCycles((short) 2);
         //suppors only single files
         setFileChunkCreator(new SkippingLineFileChunkCreator(p_files[0], 16777216));
         setGraphFormatReader(EdgeListReader.class);

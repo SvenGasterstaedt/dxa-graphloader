@@ -24,7 +24,7 @@ public class JSONGraph extends GraphFormat {
     public JSONGraph(final String... p_files) {
         super(p_files);
 
-        m_cycles = 2;
+        setCycles((short) 1);
         //key format properties
         setFileChunkCreator(new JSONGraphFileChunkCreator(p_files[0], 16777216));
         setGraphFormatReader(EdgeListReader.class);
