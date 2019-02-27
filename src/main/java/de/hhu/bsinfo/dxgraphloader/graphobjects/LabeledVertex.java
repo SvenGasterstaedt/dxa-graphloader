@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-package de.hhu.bsinfo.dxgraphloader.graph.data;
+package de.hhu.bsinfo.dxgraphloader.graphobjects;
 
 import de.hhu.bsinfo.dxutils.serialization.Exporter;
 import de.hhu.bsinfo.dxutils.serialization.Importer;
@@ -40,15 +40,15 @@ public class LabeledVertex extends Vertex{
     }
 
     @Override
-    public void exportObject(Exporter exporter) {
-        super.exportObject(exporter);
-        exporter.writeString(label);
+    public void exportObject(Exporter p_exporter) {
+        super.exportObject(p_exporter);
+        p_exporter.writeString(label);
     }
 
     @Override
-    public void importObject(Importer importer) {
-        super.importObject(importer);
-        importer.readString(label);
+    public void importObject(Importer p_importer) {
+        super.importObject(p_importer);
+        p_importer.readString(label);
     }
 
     @Override

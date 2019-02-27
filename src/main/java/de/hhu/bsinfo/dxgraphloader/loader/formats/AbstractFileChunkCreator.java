@@ -18,9 +18,13 @@ package de.hhu.bsinfo.dxgraphloader.loader.formats;
 
 import de.hhu.bsinfo.dxgraphloader.loader.data.FileChunk;
 
-public abstract class FileChunkCreator {
+public abstract class AbstractFileChunkCreator {
 
-    abstract public boolean hasRemaining();
-    abstract public FileChunk getNextChunk();
-    abstract public void setCycle(short cycle);
+    protected short m_cycle = 0;
+
+    public abstract boolean hasRemaining();
+
+    public abstract FileChunk getNextChunk();
+
+    public abstract void setCycle(short p_cycle);
 }

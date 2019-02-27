@@ -16,12 +16,6 @@
 
 package de.hhu.bsinfo.dxgraphloader.formats.readers;
 
-import de.hhu.bsinfo.dxgraphloader.graph.data.Vertex;
-import de.hhu.bsinfo.dxgraphloader.loader.data.GraphObject;
-import de.hhu.bsinfo.dxgraphloader.loader.formats.GraphFormatReader;
-import de.hhu.bsinfo.dxram.boot.BootService;
-import de.hhu.bsinfo.dxram.chunk.ChunkLocalService;
-
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -30,11 +24,16 @@ import java.util.ArrayList;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import de.hhu.bsinfo.dxgraphloader.graphobjects.Vertex;
+import de.hhu.bsinfo.dxgraphloader.loader.data.GraphObject;
+import de.hhu.bsinfo.dxgraphloader.loader.formats.AbstractGraphFormatReader;
+import de.hhu.bsinfo.dxram.boot.BootService;
+import de.hhu.bsinfo.dxram.chunk.ChunkLocalService;
+
 /**
  * <h1>NeighborListReader</h1>
  * Reader for EdgeList:
  * [vertex1][tab][vertex2][tab][vertex3][tab][vertex4][tab][vertex5][\n]
- *
  * line wise.
  *
  * @author Sven Gasterstaedt
@@ -42,23 +41,26 @@ import java.util.concurrent.ConcurrentHashMap;
  * @since 2019-03-15
  */
 
-public final class NeighborListReader extends GraphFormatReader {
+public final class NeighborListReader extends AbstractGraphFormatReader {
 
-
-    public NeighborListReader(GraphObject graphObject, ConcurrentHashMap<String, Long> peerVertexMap, ArrayList<Set<String>> remoteKeys, ChunkLocalService chunkLocalService, BootService bootService) {
-        super(graphObject, peerVertexMap, remoteKeys, chunkLocalService, bootService);
+    public NeighborListReader(GraphObject p_graph, ConcurrentHashMap<String, Long> p_vertexMap,
+            ArrayList<Set<String>> p_remoteKeys, ChunkLocalService p_chunkLocal, BootService p_boot) {
+        super(p_graph, p_vertexMap, p_remoteKeys, p_chunkLocal, p_boot);
     }
 
     @Override
-    public void readVertices(byte[] content) {
-        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(content)));
+    public void readVertices(byte[] p_content) {
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(p_content)));
         try {
             char[] lineChar = new char[4];
+            //noinspection ResultOfMethodCallIgnored
             bufferedReader.read(lineChar);
             long lineNumber = Long.getLong(new String(lineChar));
             while (bufferedReader.ready()) {
                 String line = bufferedReader.readLine();
-                if (line.charAt(0) == '#') continue;
+                if (line.charAt(0) == '#') {
+                    continue;
+                }
                 String[] key = line.split("\t");
                 String key1 = Long.toString(lineNumber);
                 createVertex(key1, Vertex.class);
@@ -75,6 +77,6 @@ public final class NeighborListReader extends GraphFormatReader {
     }
 
     @Override
-    public void readEdges(byte[] content) {
+    public void readEdges(byte[] p_content) {
     }
 }

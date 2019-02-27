@@ -22,14 +22,14 @@ import de.hhu.bsinfo.dxgraphloader.loader.formats.GraphFormat;
 
 public class EdgeList extends GraphFormat {
 
-    public EdgeList(final String... files) {
-        super(files);
+    public EdgeList(final String... p_files) {
+        super(p_files);
 
-        CYCLES = 1;
+        m_cycles = 1;
 
         //suppors only single files
-        this.setFileChunkCreator(new SkippingLineFileChunkCreator(files[0], 16777216));
-        this.setGraphFormatReader(EdgeListReader.class);
+        setFileChunkCreator(new SkippingLineFileChunkCreator(p_files[0], 16777216));
+        setGraphFormatReader(EdgeListReader.class);
 
     }
 }

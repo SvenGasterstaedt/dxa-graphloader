@@ -16,118 +16,119 @@
 
 package de.hhu.bsinfo.dxgraphloader.loader.data;
 
-import de.hhu.bsinfo.dxmem.data.AbstractChunk;
-import de.hhu.bsinfo.dxmem.data.ChunkID;
-import de.hhu.bsinfo.dxutils.serialization.Exporter;
-import de.hhu.bsinfo.dxutils.serialization.Importer;
-import de.hhu.bsinfo.dxutils.serialization.ObjectSizeUtil;
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import org.jetbrains.annotations.NotNull;
+
+import de.hhu.bsinfo.dxmem.data.AbstractChunk;
+import de.hhu.bsinfo.dxmem.data.ChunkID;
+import de.hhu.bsinfo.dxutils.serialization.Exporter;
+import de.hhu.bsinfo.dxutils.serialization.Importer;
+import de.hhu.bsinfo.dxutils.serialization.ObjectSizeUtil;
+
 public final class PeerVertexIDMap extends AbstractChunk implements ConcurrentMap<String, Long> {
 
-    ConcurrentHashMap<String, Long> map = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Long> m_map = new ConcurrentHashMap<>();
 
+    @SuppressWarnings("WeakerAccess")
     public PeerVertexIDMap() {
     }
 
-    public PeerVertexIDMap(long id) {
-        setID(id);
-    }
-
-    public Long put(String string, Long aLong) {
-        return map.put(string, aLong);
+    @SuppressWarnings("unused")
+    public PeerVertexIDMap(long p_id) {
+        setID(p_id);
     }
 
     @Override
-    public Long remove(Object o) {
-        return map.remove(o);
+    public Long put(String p_string, Long p_long) {
+        return m_map.put(p_string, p_long);
     }
 
     @Override
-    public synchronized void putAll(@NotNull Map<? extends String, ? extends Long> map) {
-        this.map.putAll(map);
+    public Long remove(Object p_obj) {
+        return m_map.remove(p_obj);
+    }
+
+    @Override
+    public synchronized void putAll(@NotNull Map<? extends String, ? extends Long> p_map) {
+        m_map.putAll(p_map);
     }
 
     @Override
     public void clear() {
-        map.clear();
+        m_map.clear();
     }
 
-    @NotNull
     @Override
-    public Set<String> keySet() {
-        return map.keySet();
+    public @NotNull Set<String> keySet() {
+        return m_map.keySet();
     }
 
-    @NotNull
     @Override
-    public Collection<Long> values() {
-        return map.values();
+    public @NotNull Collection<Long> values() {
+        return m_map.values();
     }
 
-    @NotNull
     @Override
-    public Set<Entry<String, Long>> entrySet() {
-        return map.entrySet();
+    public @NotNull Set<Entry<String, Long>> entrySet() {
+        return m_map.entrySet();
     }
 
     @Override
     public int size() {
-        return map.size();
+        return m_map.size();
     }
 
     @Override
     public boolean isEmpty() {
-        return map.isEmpty();
-    }
-
-    public boolean containsKey(Object o) {
-        return map.containsKey(o);
+        return m_map.isEmpty();
     }
 
     @Override
-    public boolean containsValue(Object o) {
-        return map.containsValue(o);
+    public boolean containsKey(Object p_obj) {
+        return m_map.containsKey(p_obj);
     }
 
     @Override
-    public Long get(Object o) {
-        return map.get(o);
-    }
-
-
-    @Override
-    public Long putIfAbsent(@NotNull String string, Long aLong) {
-        return map.putIfAbsent(string, aLong);
+    public boolean containsValue(Object p_obj) {
+        return m_map.containsValue(p_obj);
     }
 
     @Override
-    public boolean remove(@NotNull Object o, Object o1) {
-        return map.remove(o, o1);
+    public Long get(Object p_obj) {
+        return m_map.get(p_obj);
     }
 
     @Override
-    public boolean replace(@NotNull String string, @NotNull Long aLong, @NotNull Long vertex1) {
-        return map.replace(string, aLong, vertex1);
+    public Long putIfAbsent(@NotNull String p_string, Long p_long) {
+        return m_map.putIfAbsent(p_string, p_long);
     }
 
     @Override
-    public Long replace(@NotNull String string, @NotNull Long aLong) {
-        return map.replace(string, aLong);
+    public boolean remove(@NotNull Object p_obj, Object p_obj2) {
+        return m_map.remove(p_obj, p_obj2);
+    }
+
+    @Override
+    public boolean replace(@NotNull String p_string, @NotNull Long p_long, @NotNull Long p_vertex) {
+        return m_map.replace(p_string, p_long, p_vertex);
+    }
+
+    @Override
+    public Long replace(@NotNull String p_string, @NotNull Long p_long) {
+        return m_map.replace(p_string, p_long);
     }
 
     @Override
     public void exportObject(Exporter p_exporter) {
-        p_exporter.writeInt(map.size());
-        for (String string : keySet()) {
-            p_exporter.writeString(string);
-            p_exporter.writeLong(map.get(string));
+        p_exporter.writeInt(m_map.size());
+        for (String str : keySet()) {
+            p_exporter.writeString(str);
+            p_exporter.writeLong(m_map.get(str));
         }
     }
 
@@ -141,7 +142,7 @@ public final class PeerVertexIDMap extends AbstractChunk implements ConcurrentMa
                 long v = ChunkID.INVALID_ID;
                 key = p_importer.readString(key);
                 v = p_importer.readLong(v);
-                map.put(key, v);
+                m_map.put(key, v);
             }
         }
     }
@@ -150,10 +151,10 @@ public final class PeerVertexIDMap extends AbstractChunk implements ConcurrentMa
     public int sizeofObject() {
         int size = 0;
         size += Integer.BYTES;
-        for (String string : keySet()) {
-            size += ObjectSizeUtil.sizeofString(string);
+        for (String str : keySet()) {
+            size += ObjectSizeUtil.sizeofString(str);
         }
-        size += Long.BYTES * map.size();
+        size += Long.BYTES * m_map.size();
         return size;
     }
 }

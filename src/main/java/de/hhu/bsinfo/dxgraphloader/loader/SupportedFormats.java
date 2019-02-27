@@ -16,49 +16,55 @@
 
 package de.hhu.bsinfo.dxgraphloader.loader;
 
-import de.hhu.bsinfo.dxgraphloader.formats.EdgeList;
-import de.hhu.bsinfo.dxgraphloader.loader.formats.GraphFormat;
-import de.hhu.bsinfo.dxgraphloader.formats.JSONGraph;
-import de.hhu.bsinfo.dxgraphloader.formats.NeighborList;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Set;
 
-public final class SupportedFormats{
-    private HashMap<String, Class<? extends GraphFormat>> formats = new HashMap<>();
+import de.hhu.bsinfo.dxgraphloader.formats.EdgeList;
+import de.hhu.bsinfo.dxgraphloader.formats.JSONGraph;
+import de.hhu.bsinfo.dxgraphloader.formats.NeighborList;
+import de.hhu.bsinfo.dxgraphloader.loader.formats.GraphFormat;
 
-    public SupportedFormats(){
-        formats.put("EDGE", EdgeList.class);
-        formats.put("NEIGHBOR", NeighborList.class);
-        formats.put("JSON", JSONGraph.class);
-        formats.put("GRAPHML", GraphFormat.class);
+public final class SupportedFormats {
+    private HashMap<String, Class<? extends GraphFormat>> m_formats = new HashMap<>();
+
+    SupportedFormats() {
+        m_formats.put("EDGE", EdgeList.class);
+        m_formats.put("NEIGHBOR", NeighborList.class);
+        m_formats.put("JSON", JSONGraph.class);
+        m_formats.put("GRAPHML", GraphFormat.class);
     }
 
-    public void addFormat(final String key, final Class<? extends GraphFormat> formatClass) {
-        final String upper_key = key.toUpperCase();
-        if (!formats.containsKey(upper_key))
-            formats.put(upper_key, formatClass);
+    @SuppressWarnings("unused")
+    public void addFormat(final String p_key, final Class<? extends GraphFormat> p_formatClass) {
+
+        final String upperKey = p_key.toUpperCase();
+        if (!m_formats.containsKey(upperKey)) {
+
+            m_formats.put(upperKey, p_formatClass);
+        }
     }
 
-    public GraphFormat getFormat(final String key, final String[] files) {
+    GraphFormat getFormat(final String p_key, final String[] p_files) {
+
         final GraphFormat graphFormat;
         try {
-            Constructor constructor = formats.get(key).getDeclaredConstructor( files.getClass());
-            graphFormat = (GraphFormat)constructor.newInstance(new Object[]{files});
+
+            Constructor constructor = m_formats.get(p_key).getDeclaredConstructor(p_files.getClass());
+            graphFormat = (GraphFormat) constructor.newInstance(new Object[] {p_files});
             return graphFormat;
-        } catch (IllegalAccessException | NoSuchMethodException | InvocationTargetException | InstantiationException e) {
+        } catch (IllegalAccessException | NoSuchMethodException | InvocationTargetException |InstantiationException e) {
             e.printStackTrace();
         }
         return null;
     }
 
-    public boolean isSupported(final String key) {
-        return formats.containsKey(key.toUpperCase());
+    public boolean isSupported(final String p_key) {
+        return m_formats.containsKey(p_key.toUpperCase());
     }
 
     public Set<String> supportedFormats() {
-        return formats.keySet();
+        return m_formats.keySet();
     }
 }

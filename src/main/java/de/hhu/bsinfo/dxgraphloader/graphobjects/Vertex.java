@@ -14,81 +14,83 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-package de.hhu.bsinfo.dxgraphloader.graph.data;
+package de.hhu.bsinfo.dxgraphloader.graphobjects;
+
+import java.util.Arrays;
 
 import de.hhu.bsinfo.dxmem.data.AbstractChunk;
 import de.hhu.bsinfo.dxram.chunk.ChunkService;
 import de.hhu.bsinfo.dxutils.serialization.Exporter;
 import de.hhu.bsinfo.dxutils.serialization.Importer;
 
-import java.util.Arrays;
-
 public class Vertex extends AbstractChunk {
 
-    private long[] edges;
+    private long[] m_edges;
 
-
+    @SuppressWarnings("WeakerAccess")
     public Vertex(long p_id) {
-        edges = new long[1];
+        m_edges = new long[1];
         setID(p_id);
     }
 
     public Vertex() {
-        edges = new long[1];
+        m_edges = new long[1];
     }
 
-    public Vertex(long p_id, int neighbor_count) {
+    @SuppressWarnings("WeakerAccess")
+    public Vertex(long p_id, int p_neighborCount) {
         super(p_id);
-        edges = new long[neighbor_count];
+        m_edges = new long[p_neighborCount];
     }
 
-    public void addNeighbor(long edgeID) {
-        edges = Arrays.copyOf(edges, edges.length + 1);
-        edges[edges.length - 1] = edgeID;
+    void addNeighbor(long p_edgeID) {
+        m_edges = Arrays.copyOf(m_edges, m_edges.length + 1);
+        m_edges[m_edges.length - 1] = p_edgeID;
     }
 
-    public void addNeighbors(long[] edgeIDs) {
-        edges = Arrays.copyOf(edges, edges.length + 1);
-        System.arraycopy(edgeIDs, 0, edges, edges.length, edgeIDs.length);
+    void addNeighbors(long[] p_edgeIDs) {
+        m_edges = Arrays.copyOf(m_edges, m_edges.length + 1);
+        System.arraycopy(p_edgeIDs, 0, m_edges, m_edges.length, p_edgeIDs.length);
     }
 
-    public void mergeVertex(Vertex vertex, ChunkService chunkService) {
-        for (long l : vertex.edges) {
+    public void mergeVertex(Vertex p_vertex, ChunkService p_chunk) {
+        for (long l : p_vertex.m_edges) {
             Edge edge = new Edge(l);
-            chunkService.get().get(edge);
-            if (edge.from == vertex.getID()) {
-                edge.setFrom(this.getID());
+            p_chunk.get().get(edge);
+            if (edge.from == p_vertex.getID()) {
+                edge.setFrom(getID());
             } else {
-                edge.setTo(this.getID());
+                edge.setTo(getID());
             }
-            chunkService.put().put(edge);
+            p_chunk.put().put(edge);
         }
-        this.addNeighbors(vertex.edges);
-        chunkService.remove().remove(vertex);
-        chunkService.resize().resize(this);
-        chunkService.put().put(this);
+        addNeighbors(p_vertex.m_edges);
+        p_chunk.remove().remove(p_vertex);
+        p_chunk.resize().resize(this);
+        p_chunk.put().put(this);
     }
 
     @Override
-    public void exportObject(Exporter exporter) {
-        exporter.writeInt(edges.length);
-        for (long l : edges) {
-            exporter.writeLong(l);
+    public void exportObject(Exporter p_exporter) {
+        p_exporter.writeInt(m_edges.length);
+        for (long l : m_edges) {
+            p_exporter.writeLong(l);
         }
     }
 
+    @SuppressWarnings("Duplicates")
     @Override
-    public void importObject(Importer importer) {
+    public void importObject(Importer p_importer) {
         int size = 0;
-        size = importer.readInt(size);
-        edges = new long[size];
+        size = p_importer.readInt(size);
+        m_edges = new long[size];
         for (int i = 0; i < size; i++) {
-            edges[i] = importer.readLong(edges[i]);
+            m_edges[i] = p_importer.readLong(m_edges[i]);
         }
     }
 
     @Override
     public int sizeofObject() {
-        return Integer.BYTES + Long.BYTES * edges.length;
+        return Integer.BYTES + Long.BYTES * m_edges.length;
     }
 }

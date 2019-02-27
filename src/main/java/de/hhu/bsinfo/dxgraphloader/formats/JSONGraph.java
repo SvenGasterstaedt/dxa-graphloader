@@ -21,12 +21,12 @@ import de.hhu.bsinfo.dxgraphloader.formats.splitter.JSONGraphFileChunkCreator;
 import de.hhu.bsinfo.dxgraphloader.loader.formats.GraphFormat;
 
 public class JSONGraph extends GraphFormat {
-    public JSONGraph(final String... files) {
-        super(files);
+    public JSONGraph(final String... p_files) {
+        super(p_files);
 
-        CYCLES = 2;
+        m_cycles = 2;
         //key format properties
-        this.setFileChunkCreator(new JSONGraphFileChunkCreator(files[0], 16777216));
-        this.setGraphFormatReader(EdgeListReader.class);
+        setFileChunkCreator(new JSONGraphFileChunkCreator(p_files[0], 16777216));
+        setGraphFormatReader(EdgeListReader.class);
     }
 }

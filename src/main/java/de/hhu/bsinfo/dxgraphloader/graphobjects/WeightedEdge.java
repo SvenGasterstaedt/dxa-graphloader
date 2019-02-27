@@ -14,36 +14,36 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-package de.hhu.bsinfo.dxgraphloader.graph.data;
+package de.hhu.bsinfo.dxgraphloader.graphobjects;
 
 import de.hhu.bsinfo.dxutils.serialization.Exporter;
 import de.hhu.bsinfo.dxutils.serialization.Importer;
 
 public class WeightedEdge extends Edge {
 
-    protected int weighted_value = 0;
+    private int m_weightedValue = 0;
 
-    public WeightedEdge(long id){
-        super(id);
+    public WeightedEdge(long p_id){
+        super(p_id);
     }
 
-    public WeightedEdge(long p_id,long from,long to, int weighted_value){
-        super(p_id,from,to);
-        this.weighted_value = weighted_value;
-    }
-
-    @Override
-    public void exportObject(Exporter exporter) {
-        exporter.writeLong(from);
-        exporter.writeLong(to);
-        exporter.writeInt(weighted_value);
+    public WeightedEdge(long p_id,long p_from,long p_to, int p_weightedValue){
+        super(p_id,p_from,p_to);
+        m_weightedValue = p_weightedValue;
     }
 
     @Override
-    public void importObject(Importer importer) {
-        importer.readLong(from);
-        importer.readLong(to);
-        importer.readInt(weighted_value);
+    public void exportObject(Exporter p_exporter) {
+        p_exporter.writeLong(from);
+        p_exporter.writeLong(to);
+        p_exporter.writeInt(m_weightedValue);
+    }
+
+    @Override
+    public void importObject(Importer p_importer) {
+        p_importer.readLong(from);
+        p_importer.readLong(to);
+        p_importer.readInt(m_weightedValue);
     }
 
     @Override

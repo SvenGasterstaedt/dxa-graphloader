@@ -21,13 +21,12 @@ import de.hhu.bsinfo.dxgraphloader.formats.readers.NeighborListReader;
 import de.hhu.bsinfo.dxgraphloader.formats.splitter.SkippingLineNumberFileChunkCreator;
 
 public class NeighborList extends GraphFormat {
-    public NeighborList(final String... files) {
-        super(files);
+    public NeighborList(final String... p_files) {
+        super(p_files);
 
-        CYCLES = 1;
+        m_cycles = 1;
 
-        this.setFileChunkCreator(new SkippingLineNumberFileChunkCreator(files[0], 16777216));
-        this.setGraphFormatReader(NeighborListReader.class);
+        setFileChunkCreator(new SkippingLineNumberFileChunkCreator(p_files[0], 16777216));
+        setGraphFormatReader(NeighborListReader.class);
     }
 }
-

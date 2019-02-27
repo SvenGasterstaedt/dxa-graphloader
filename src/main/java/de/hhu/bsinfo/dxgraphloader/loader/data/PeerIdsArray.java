@@ -23,60 +23,59 @@ import de.hhu.bsinfo.dxutils.serialization.ObjectSizeUtil;
 
 public final class PeerIdsArray extends AbstractChunk {
 
-    long[][] chunks = new long[0][0];
+    private long[][] m_chunks = new long[0][0];
 
-
+    @SuppressWarnings("unused")
     public PeerIdsArray() {
     }
 
-    public PeerIdsArray(long c_id) {
-        setID(c_id);
+    public PeerIdsArray(long p_id) {
+        setID(p_id);
     }
 
-    public PeerIdsArray(int size) {
-        chunks = new long[size][];
-        for(int i = 0; i < chunks.length; i++){
-            chunks[i] = new long[0];
+    public PeerIdsArray(int p_size) {
+        m_chunks = new long[p_size][];
+        for (int i = 0; i < m_chunks.length; i++) {
+            m_chunks[i] = new long[0];
         }
     }
 
-    public boolean add(int i, long[] id) {
-        if (i >= 0 && i < chunks.length) {
-            chunks[i] = id;
-            return true;
+    public void add(int p_index, long[] p_id) {
+        if (p_index >= 0 && p_index < m_chunks.length) {
+            m_chunks[p_index] = p_id;
         }
-        return false;
     }
 
-    public long[] getArray(int peerPos) {
-        if (peerPos >= 0 && peerPos < chunks.length) {
-            return chunks[peerPos];
+    public long[] getArray(int p_pos) {
+        if (p_pos >= 0 && p_pos < m_chunks.length) {
+            return m_chunks[p_pos];
         }
         return null;
     }
 
     @Override
     public void exportObject(Exporter p_exporter) {
-        p_exporter.writeInt(chunks.length);
-        for (long[] l : chunks)
-            p_exporter.writeLongArray(l);
+        p_exporter.writeInt(m_chunks.length);
+        for (long[] longArray : m_chunks) {
+            p_exporter.writeLongArray(longArray);
+        }
     }
 
     @Override
     public void importObject(Importer p_importer) {
         int size = 0;
         size = p_importer.readInt(size);
-        chunks = new long[size][];
+        m_chunks = new long[size][];
         for (int i = 0; i < size; i++) {
-            chunks[i] = p_importer.readLongArray(chunks[i]);
+            m_chunks[i] = p_importer.readLongArray(m_chunks[i]);
         }
     }
 
     @Override
     public int sizeofObject() {
         int size = Integer.BYTES;
-        for (long[] l : chunks) {
-            size += ObjectSizeUtil.sizeofLongArray(l);
+        for (long[] longArray : m_chunks) {
+            size += ObjectSizeUtil.sizeofLongArray(longArray);
         }
         return size;
     }

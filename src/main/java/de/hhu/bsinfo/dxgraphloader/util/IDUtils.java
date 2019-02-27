@@ -17,7 +17,10 @@
 package de.hhu.bsinfo.dxgraphloader.util;
 
 public final class IDUtils {
-    public static String shortToHexString(short s){
-        return Integer.toHexString(s).substring(4).toUpperCase();
+    private IDUtils() {
+    }
+
+    public static String shortToHexString(short p_short) {
+        return Integer.toHexString(p_short).substring(4).toUpperCase();
     }
 }

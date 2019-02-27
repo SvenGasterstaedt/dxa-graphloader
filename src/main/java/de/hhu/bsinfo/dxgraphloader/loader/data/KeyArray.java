@@ -16,43 +16,38 @@
 
 package de.hhu.bsinfo.dxgraphloader.loader.data;
 
+import java.util.HashSet;
+
 import de.hhu.bsinfo.dxmem.data.AbstractChunk;
 import de.hhu.bsinfo.dxutils.serialization.Distributable;
 import de.hhu.bsinfo.dxutils.serialization.Exporter;
 import de.hhu.bsinfo.dxutils.serialization.Importer;
 import de.hhu.bsinfo.dxutils.serialization.ObjectSizeUtil;
 
-import java.util.HashSet;
-
 public final class KeyArray extends AbstractChunk implements Distributable {
 
+    private String[] m_keys;
+
+    @SuppressWarnings("unused")
+    public KeyArray() {
+    }
 
     public String[] getKeys() {
-        return keys;
+        return m_keys;
     }
 
-    private String[] keys;
-
-    public KeyArray(){
+    public KeyArray(final long p_id) {
+        setID(p_id);
     }
 
-
-    public KeyArray(final long c_id){
-        setID(c_id);
-    }
-
-    public KeyArray(final HashSet<String> strings){
-        keys = strings.toArray(new String[0]);
-    }
-
-    public KeyArray(final String[] keys){
-        this.keys = keys;
+    public KeyArray(final HashSet<String> p_keys) {
+        m_keys = p_keys.toArray(new String[0]);
     }
 
     @Override
     public void exportObject(final Exporter p_exporter) {
-        p_exporter.writeInt(keys.length);
-        for(String s: keys) {
+        p_exporter.writeInt(m_keys.length);
+        for (String s : m_keys) {
             p_exporter.writeString(s);
         }
     }
@@ -61,16 +56,16 @@ public final class KeyArray extends AbstractChunk implements Distributable {
     public void importObject(final Importer p_importer) {
         int size = 0;
         size = p_importer.readInt(size);
-        keys = new String[size];
-        for(int i = 0; i < size;i++){
-            keys[i] = p_importer.readString(keys[i]);
+        m_keys = new String[size];
+        for (int i = 0; i < size; i++) {
+            m_keys[i] = p_importer.readString(m_keys[i]);
         }
     }
 
     @Override
     public int sizeofObject() {
         int size = Integer.BYTES;
-        for(String s:keys){
+        for (String s : m_keys) {
             size += ObjectSizeUtil.sizeofString(s);
         }
         return size;

@@ -25,38 +25,38 @@ import de.hhu.bsinfo.dxutils.serialization.ObjectSizeUtil;
 public final class FileChunk extends AbstractChunk {
 
 
-    private byte[] data;
-    private boolean hasNext = true;
+    private byte[] m_data;
+    private boolean m_hasNext = true;
 
 
     public FileChunk(final long p_id) {
-        this.setID(p_id);
+        setID(p_id);
     }
 
-    public FileChunk(final byte[] fileData) {
-        data = fileData;
+    public FileChunk(final byte[] p_fileData) {
+        m_data = p_fileData;
         setID(ChunkID.INVALID_ID);
     }
 
     public byte[] getContents() {
-        return data;
+        return m_data;
     }
 
     @Override
     public void exportObject(final Exporter p_exporter) {
-        p_exporter.writeByteArray(data);
-        p_exporter.writeBoolean(hasNext);
+        p_exporter.writeByteArray(m_data);
+        p_exporter.writeBoolean(m_hasNext);
     }
 
 
     @Override
     public void importObject(final Importer p_importer) {
-        data = p_importer.readByteArray(data);
-        hasNext = p_importer.readBoolean(hasNext);
+        m_data = p_importer.readByteArray(m_data);
+        m_hasNext = p_importer.readBoolean(m_hasNext);
     }
 
     @Override
     public int sizeofObject() {
-        return ObjectSizeUtil.sizeofByteArray(data) + ObjectSizeUtil.sizeofBoolean();
+        return ObjectSizeUtil.sizeofByteArray(m_data) + ObjectSizeUtil.sizeofBoolean();
     }
 }

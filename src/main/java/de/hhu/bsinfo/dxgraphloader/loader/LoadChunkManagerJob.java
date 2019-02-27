@@ -16,11 +16,28 @@
 
 package de.hhu.bsinfo.dxgraphloader.loader;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import de.hhu.bsinfo.dxgraphloader.GraphLoaderApp;
-import de.hhu.bsinfo.dxgraphloader.graph.data.Vertex;
-import de.hhu.bsinfo.dxgraphloader.loader.data.LongArray;
+import de.hhu.bsinfo.dxgraphloader.graphobjects.Vertex;
 import de.hhu.bsinfo.dxgraphloader.loader.data.GraphObject;
 import de.hhu.bsinfo.dxgraphloader.loader.data.KeyArray;
+import de.hhu.bsinfo.dxgraphloader.loader.data.LongArray;
 import de.hhu.bsinfo.dxgraphloader.loader.data.PeerIdsArray;
 import de.hhu.bsinfo.dxgraphloader.util.IDUtils;
 import de.hhu.bsinfo.dxmem.data.ChunkID;
@@ -36,63 +53,47 @@ import de.hhu.bsinfo.dxram.sync.SynchronizationService;
 import de.hhu.bsinfo.dxutils.serialization.Exporter;
 import de.hhu.bsinfo.dxutils.serialization.Importer;
 import de.hhu.bsinfo.dxutils.serialization.ObjectSizeUtil;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
-import static de.hhu.bsinfo.dxgraphloader.loader.GraphLoader.LOAD_LOCK;
-import static java.lang.Thread.sleep;
-
 
 public final class LoadChunkManagerJob extends AbstractJob {
-
-
     private static final Logger LOGGER = LogManager.getFormatterLogger(GraphLoaderApp.class.getSimpleName());
 
-    private long chunkArrayID;
-    private String classPath;
-    private int workerCount;
+    private int m_workerCount;
 
-    private long distributedObjectTableID;
+    private long m_arrayID;
+    private long m_graph;
 
-    private ConcurrentHashMap<String, Long> localVertexMap = new ConcurrentHashMap<String, Long>();
-    private Queue<HashSet<String>> remoteQueue = new ConcurrentLinkedQueue<>();
+    private String m_classpath;
 
+    private ConcurrentHashMap<String, Long> m_vertexMap = new ConcurrentHashMap<String, Long>();
+
+    @SuppressWarnings("unused")
     public LoadChunkManagerJob() {
         super();
     }
 
-    public LoadChunkManagerJob(long distributedObjectTableID, long chunkID, String graphLoader, int workerCount) {
-
-        this.chunkArrayID = chunkID;
-        this.classPath = graphLoader;
-
-        this.distributedObjectTableID = distributedObjectTableID;
-        this.workerCount = workerCount;
-
+    @SuppressWarnings("unused")
+    public LoadChunkManagerJob(final long p_graphID, final long p_longArray,
+            final String p_graphLoader, final int p_workerCount) {
+        m_arrayID = p_longArray;
+        m_classpath = p_graphLoader;
+        m_graph = p_graphID;
+        m_workerCount = p_workerCount;
     }
 
     @Override
     public void execute() {
-        //get service
-        LOGGER.info("Started %s from %s", LoadChunkManagerJob.class.getSimpleName(), GraphLoaderApp.class.getSimpleName());
-        ChunkService chunkService = getService(ChunkService.class);
-        ChunkLocalService chunkLocalService = getService(ChunkLocalService.class);
-        BootService bootService = getService(BootService.class);
-        JobService jobService = getService(JobService.class);
-        NameserviceService nameserviceService = getService(NameserviceService.class);
-        SynchronizationService synchronizationService = getService(SynchronizationService.class);
+        LOGGER.info("Started '%s' from '%s'!", LoadChunkManagerJob.class.getSimpleName(),
+                GraphLoaderApp.class.getSimpleName());
 
-        GraphObject graphObject = new GraphObject(distributedObjectTableID);
-        chunkService.get().get(graphObject);
+        final GraphLoaderContext context = new GraphLoaderContext(getService(BootService.class),
+                getService(ChunkService.class), getService(ChunkLocalService.class), getService(JobService.class),
+                getService(NameserviceService.class), getService(SynchronizationService.class));
 
-        LongArray longArray = new LongArray(chunkArrayID);
-        chunkLocalService.getLocal().get(longArray);
+        GraphObject graphObject = new GraphObject(m_graph);
+        context.getChunkService().get().get(graphObject);
+
+        LongArray longArray = new LongArray(m_arrayID);
+        context.getChunkLocalService().getLocal().get(longArray);
         Queue<Long> chunkList = new ConcurrentLinkedQueue<>();
         List<LoadChunkLocalJob> jobList = new ArrayList<>();
 
@@ -100,9 +101,8 @@ public final class LoadChunkManagerJob extends AbstractJob {
 
         int cycleBarrier = BarrierID.INVALID_ID;
         while (cycleBarrier == BarrierID.INVALID_ID) {
-            cycleBarrier = (int) nameserviceService.getChunkID(GraphLoader.CYCLE_LOCK, 1000);
+            cycleBarrier = (int) context.getNameserviceService().getChunkID(GraphLoader.CYCLE_LOCK, 1000);
         }
-
 
         long[] chunkIDs = longArray.getIds();
 
@@ -110,35 +110,36 @@ public final class LoadChunkManagerJob extends AbstractJob {
             chunkList.add(id);
             //LOGGER.debug(Long.toHexString(id) + " added to queue!");
         }
-        chunkService.remove().remove(longArray);
+        context.getChunkService().remove().remove(longArray);
 
         {
             int loadBarrier = BarrierID.INVALID_ID;
             while (loadBarrier == BarrierID.INVALID_ID) {
-                loadBarrier = (int) nameserviceService.getChunkID(LOAD_LOCK, 1000);
+                loadBarrier = (int) context.getNameserviceService().getChunkID(GraphLoader.LOAD_LOCK, 1000);
             }
 
             LOGGER.info("Extracting and Creating Local Vertices!");
             ArrayList<Set<String>> remoteKeySet = new ArrayList<>();
-            for (short p : bootService.getOnlinePeerNodeIDs()) {
-                remoteKeySet.add(Collections.newSetFromMap((new ConcurrentHashMap<String, Boolean>())));
+            for (int j = 0; j < context.getBootService().getOnlinePeerNodeIDs().size(); j++) {
+                remoteKeySet.add(Collections.newSetFromMap(new ConcurrentHashMap<String, Boolean>()));
             }
 
-
-            for (int i = 0; i < workerCount - 1; i++) {
-                LoadChunkLocalJob abstractJob = new LoadChunkLocalJob(chunkList, classPath, queueLock, graphObject, localVertexMap, remoteKeySet);
+            for (int i = 0; i < m_workerCount - 1; i++) {
+                LoadChunkLocalJob abstractJob = new LoadChunkLocalJob(chunkList, m_classpath, queueLock, graphObject,
+                        m_vertexMap, remoteKeySet);
                 jobList.add(abstractJob);
-                jobService.pushJob(abstractJob);
+                context.getJobService().pushJob(abstractJob);
             }
 
-            LoadChunkLocalJob localJob = new LoadChunkLocalJob(chunkList, classPath, queueLock, graphObject, localVertexMap, remoteKeySet);
-            localJob.setServicesForLocal(bootService, chunkService, chunkLocalService, nameserviceService, synchronizationService);
+            LoadChunkLocalJob localJob = new LoadChunkLocalJob(chunkList, m_classpath, queueLock, graphObject,
+                    m_vertexMap, remoteKeySet);
+            localJob.setServicesForLocal(context);
             jobList.add(localJob);
             localJob.execute();
 
             while (!areAllJobsFinished(jobList)) {
                 try {
-                    sleep(100);
+                    Thread.sleep(100);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -146,20 +147,21 @@ public final class LoadChunkManagerJob extends AbstractJob {
             jobList.clear();
 
             LOGGER.info("Storing Remote Keys!");
-            PeerIdsArray finder = new PeerIdsArray(bootService.getOnlinePeerNodeIDs().size());
+            PeerIdsArray finder = new PeerIdsArray(context.getBootService().getOnlinePeerNodeIDs().size());
 
-            long[] keys_id = new long[bootService.getOnlinePeerNodeIDs().size()];
+            for (int i = 0; i < context.getBootService().getOnlinePeerNodeIDs().size(); i++) {
 
-            for (int i = 0; i < bootService.getOnlinePeerNodeIDs().size(); i++) {
-
-                if (bootService.getOnlinePeerNodeIDs().get(i) == bootService.getNodeID()) continue;
+                if (context.getBootService().getOnlinePeerNodeIDs().get(i) == context.getBootService().getNodeID()) {
+                    continue;
+                }
 
                 Set<String> set = remoteKeySet.get(i);
 
                 long[] ids = new long[set.size() / 5324];
                 Arrays.fill(ids, ChunkID.INVALID_ID);
 
-                LOGGER.info("Keys for Peer: '%s'", IDUtils.shortToHexString(bootService.getOnlinePeerNodeIDs().get(i)));
+                LOGGER.info("Keys for Peer: '%s'",
+                        IDUtils.shortToHexString(context.getBootService().getOnlinePeerNodeIDs().get(i)));
                 int pos = 0;
                 HashSet<String> smallSet = new HashSet<>();
                 Iterator<String> iterator = set.iterator();
@@ -169,11 +171,12 @@ public final class LoadChunkManagerJob extends AbstractJob {
                     if (smallSet.size() > 5324 * 32 || !iterator.hasNext()) {
                         final KeyArray keyArray = new KeyArray(smallSet);
                         while (keyArray.getID() == ChunkID.INVALID_ID) {
-                            chunkService.create().create(bootService.getOnlinePeerNodeIDs().get(i), keyArray);
+                            context.getChunkService().create().create(
+                                    context.getBootService().getOnlinePeerNodeIDs().get(i), keyArray);
                         }
-                        boolean status = false;
+                        boolean status;
                         do {
-                            status = chunkService.put().put(keyArray);
+                            status = context.getChunkService().put().put(keyArray);
                         } while (!status);
                         LOGGER.debug("Created %s!", Long.toHexString(keyArray.getID()));
                         ids[pos] = keyArray.getID();
@@ -184,75 +187,79 @@ public final class LoadChunkManagerJob extends AbstractJob {
                 finder.add(i, ids);
             }
             while (finder.getID() == ChunkID.INVALID_ID) {
-                chunkService.create().create(bootService.getNodeID(), finder);
-                chunkService.put().put(finder);
+                context.getChunkService().create().create(context.getBootService().getNodeID(), finder);
+                context.getChunkService().put().put(finder);
             }
 
             LOGGER.info("Waiting for other peers ...");
-            BarrierStatus status = synchronizationService.barrierSignOn(loadBarrier, finder.getID(), true);
+            BarrierStatus status = context.getSynchronizationService()
+                    .barrierSignOn(loadBarrier, finder.getID(), true);
 
             LOGGER.info("Starting Synchronization!");
             long[] finderIDs = status.getCustomData();
             PeerIdsArray[] finders = new PeerIdsArray[finderIDs.length];
             for (int i = 0; i < finderIDs.length; i++) {
                 finders[i] = new PeerIdsArray(finderIDs[i]);
-                chunkService.get().get(finders);
-                for (long l : finders[i].getArray(graphObject.getPeerPos(bootService.getNodeID()))) {
-                    if (l == ChunkID.INVALID_ID) continue;
+                context.getChunkService().get().get(finders);
+                for (long l : Objects.requireNonNull(
+                        finders[i].getArray(graphObject.getPeerPos(context.getBootService().getNodeID())))) {
+                    if (l == ChunkID.INVALID_ID) {
+                        continue;
+                    }
                     LOGGER.debug("Stored '%s'", Long.toHexString(l));
-                    KeyArray str = new KeyArray(l);
-                    chunkService.get().get(str);
-                    for (String s : str.getKeys()) {
-                        Long value = localVertexMap.putIfAbsent(s, ChunkID.INVALID_ID);
+                    KeyArray keyArray = new KeyArray(l);
+                    context.getChunkService().get().get(keyArray);
+                    for (String s : keyArray.getKeys()) {
+                        Long value = m_vertexMap.putIfAbsent(s, ChunkID.INVALID_ID);
                         if (value == null) {
                             Vertex v = new Vertex();
-                            chunkLocalService.createLocal().create(v);
-                            localVertexMap.replace(s, v.getID());
+                            context.getChunkLocalService().createLocal().create(v);
+                            m_vertexMap.replace(s, v.getID());
                         }
                     }
-                    chunkService.remove().remove(str);
+                    context.getChunkService().remove().remove(keyArray);
                 }
             }
 
-            for (long l : localVertexMap.values()) {
-                chunkService.put().put(new Vertex());
-            }
+            m_vertexMap.values().forEach(value -> context.getChunkService().put().put(new Vertex()));
 
-            LOGGER.info("'%s' holds '%s' Vertices", IDUtils.shortToHexString(bootService.getNodeID()), localVertexMap.values().size());
+            LOGGER.info("'%s' holds '%s' Vertices",
+                    IDUtils.shortToHexString(context.getBootService().getNodeID()),
+                    m_vertexMap.values().size());
         }
-        synchronizationService.barrierSignOn(cycleBarrier, ChunkID.INVALID_ID, true);
+        context.getSynchronizationService().barrierSignOn(cycleBarrier, ChunkID.INVALID_ID, true);
     }
 
-    private static boolean areAllJobsFinished(List<LoadChunkLocalJob> job) {
-        for (LoadChunkLocalJob j : job) {
-            if (!j.isFinished()) {
+    private static boolean areAllJobsFinished(List<LoadChunkLocalJob> p_job) {
+        for (LoadChunkLocalJob job : p_job) {
+            if (!job.isFinished()) {
                 return false;
             }
         }
         return true;
     }
 
-
     @Override
     public void importObject(final Importer p_importer) {
         super.importObject(p_importer);
-        chunkArrayID = p_importer.readLong(chunkArrayID);
-        classPath = p_importer.readString(classPath);
-        workerCount = p_importer.readInt(workerCount);
-        distributedObjectTableID = p_importer.readLong(distributedObjectTableID);
+        m_arrayID = p_importer.readLong(m_arrayID);
+        m_classpath = p_importer.readString(m_classpath);
+        m_workerCount = p_importer.readInt(m_workerCount);
+        m_graph = p_importer.readLong(m_graph);
     }
 
     @Override
     public void exportObject(final Exporter p_exporter) {
         super.exportObject(p_exporter);
-        p_exporter.writeLong(chunkArrayID);
-        p_exporter.writeString(classPath);
-        p_exporter.writeInt(workerCount);
-        p_exporter.writeLong(distributedObjectTableID);
+        p_exporter.writeLong(m_arrayID);
+        p_exporter.writeString(m_classpath);
+        p_exporter.writeInt(m_workerCount);
+        p_exporter.writeLong(m_graph);
     }
 
     @Override
     public int sizeofObject() {
-        return super.sizeofObject() + Long.BYTES + ObjectSizeUtil.sizeofString(classPath) + Integer.BYTES + Long.BYTES;
+        return super.sizeofObject() + Long.BYTES + ObjectSizeUtil.sizeofString(m_classpath) + Integer.BYTES +
+                Long.BYTES;
     }
 }

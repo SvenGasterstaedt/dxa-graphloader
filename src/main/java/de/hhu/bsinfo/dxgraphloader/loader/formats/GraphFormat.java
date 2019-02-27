@@ -16,33 +16,34 @@
 
 package de.hhu.bsinfo.dxgraphloader.loader.formats;
 
-public abstract class GraphFormat {
-    FileChunkCreator fileChunkCreator;
-    Class<? extends GraphFormatReader> formatReader;
-    String[] files;
+public class GraphFormat {
+    private AbstractFileChunkCreator m_fileChunkCreator;
+    private Class<? extends AbstractGraphFormatReader> m_formatReader;
+    private String[] m_files;
 
-    public short CYCLES;
+    public short m_cycles;
 
-    public GraphFormat(final String... files) {
-        this.files = files;
+    public GraphFormat(final String... p_files) {
+        m_files = p_files;
     }
 
-    public FileChunkCreator getFileChunkCreator(short cycle) {
-        fileChunkCreator.setCycle(cycle);
-        return fileChunkCreator;
+    public AbstractFileChunkCreator getFileChunkCreator(short p_cycle) {
+        m_fileChunkCreator.setCycle(p_cycle);
+        return m_fileChunkCreator;
     }
 
-
-    public Class<? extends GraphFormatReader> getGraphFormatReader() {
-        return formatReader;
+    public Class<? extends AbstractGraphFormatReader> getGraphFormatReader() {
+        return m_formatReader;
     }
 
-    public void setGraphFormatReader(Class<? extends GraphFormatReader> formatReader){
-        this.formatReader = formatReader;
+    @SuppressWarnings("WeakerAccess")
+    public void setGraphFormatReader(Class<? extends AbstractGraphFormatReader> p_formatReader) {
+        m_formatReader = p_formatReader;
     }
 
-    public void setFileChunkCreator(FileChunkCreator fileChunkCreator){
-        this.fileChunkCreator = fileChunkCreator;
+    @SuppressWarnings("WeakerAccess")
+    public void setFileChunkCreator(AbstractFileChunkCreator p_fileChunkCreator) {
+        m_fileChunkCreator = p_fileChunkCreator;
     }
 }
 
