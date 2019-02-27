@@ -1,45 +1,53 @@
 package de.hhu.bsinfo.dxgraphloader.formats.readers;
 
 import de.hhu.bsinfo.dxgraphloader.graph.data.Vertex;
-import de.hhu.bsinfo.dxgraphloader.loader.data.DistributedObjectTable;
-import de.hhu.bsinfo.dxgraphloader.loader.data.PeerVertexMap;
+import de.hhu.bsinfo.dxgraphloader.loader.data.GraphObject;
 import de.hhu.bsinfo.dxgraphloader.loader.formats.GraphFormatReader;
 import de.hhu.bsinfo.dxram.boot.BootService;
 import de.hhu.bsinfo.dxram.chunk.ChunkLocalService;
-import de.hhu.bsinfo.dxram.chunk.ChunkService;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.concurrent.locks.Lock;
+import java.util.ArrayList;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @SuppressWarnings("Duplicates")
 public class NeighborListReader extends GraphFormatReader {
 
-    public NeighborListReader(DistributedObjectTable distributedObjectTable) {
-        super(distributedObjectTable);
+
+    public NeighborListReader(GraphObject graphObject, ConcurrentHashMap<String, Long> peerVertexMap, ArrayList<Set<String>> remoteKeys, ChunkLocalService chunkLocalService, BootService bootService) {
+        super(graphObject, peerVertexMap, remoteKeys, chunkLocalService, bootService);
     }
 
     @Override
-    public boolean execute(byte[] content) {
+    public void readVertices(byte[] content) {
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(content)));
         try {
+            char[] lineChar = new char[4];
+            bufferedReader.read(lineChar);
+            long lineNumber = Long.getLong(new String(lineChar));
             while (bufferedReader.ready()) {
                 String line = bufferedReader.readLine();
                 if (line.charAt(0) == '#') continue;
-
                 String[] key = line.split("\t");
-                createVertex(key[0],Vertex.class, "");
-
-                for (int i = 1; i < key.length; i++) {
-                    createVertex(key[i],Vertex.class, "");
+                String key1 = Long.toString(lineNumber);
+                createVertex(key1, Vertex.class);
+                for (int i = 0; i < key.length; i++) {
+                    createVertex(key[i], Vertex.class);
                 }
+                lineNumber++;
             }
+            bufferedReader.close();
         } catch (
                 IOException e) {
             e.printStackTrace();
         }
-        return false;
+    }
+
+    @Override
+    public void readEdges(byte[] content) {
     }
 }

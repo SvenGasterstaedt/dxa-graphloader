@@ -7,6 +7,8 @@ import de.hhu.bsinfo.dxram.chunk.ChunkService;
 import de.hhu.bsinfo.dxram.engine.DXRAMVersion;
 import de.hhu.bsinfo.dxram.generated.BuildConfig;
 import de.hhu.bsinfo.dxram.job.JobService;
+import de.hhu.bsinfo.dxram.nameservice.NameserviceService;
+import de.hhu.bsinfo.dxram.sync.SynchronizationService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,7 +40,11 @@ public class GraphLoaderApp extends AbstractApplication {
         final BootService bootService = getService(BootService.class);
         final JobService jobService = getService(JobService.class);
         final ChunkService chunkService = getService(ChunkService.class);
-        final GraphLoader graphLoader = new GraphLoader(bootService, jobService, chunkService);
+        final SynchronizationService synchronizationService = getService(SynchronizationService.class);
+        final NameserviceService nameserviceService = getService(NameserviceService.class);
+
+        final GraphLoader graphLoader = new GraphLoader(bootService, jobService, chunkService,nameserviceService,synchronizationService);
+
 
         if (p_args.length < 3) {
             LOGGER.error("Parameters required! <int numWorkers> <boolean parseWhileReading> <String format> <Stringpath files>\nTerminated!");
@@ -69,7 +75,13 @@ public class GraphLoaderApp extends AbstractApplication {
             }
         }
         //prints id of the distrubuted object table
-        System.out.println(graphLoader.loadFormat(format,file_paths,numWorkers).getID());
+        long l = graphLoader.loadFormat(format,file_paths,numWorkers).getID();
+        try {
+            sleep(100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println(Long.toHexString(l));
     }
 
     @Override

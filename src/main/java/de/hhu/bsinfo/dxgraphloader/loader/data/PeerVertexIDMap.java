@@ -1,6 +1,7 @@
 package de.hhu.bsinfo.dxgraphloader.loader.data;
 
 import de.hhu.bsinfo.dxmem.data.AbstractChunk;
+import de.hhu.bsinfo.dxmem.data.ChunkID;
 import de.hhu.bsinfo.dxutils.serialization.Exporter;
 import de.hhu.bsinfo.dxutils.serialization.Importer;
 import de.hhu.bsinfo.dxutils.serialization.ObjectSizeUtil;
@@ -12,13 +13,14 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-public class PeerVertexMap extends AbstractChunk implements ConcurrentMap<String, Long> {
+public class PeerVertexIDMap extends AbstractChunk implements ConcurrentMap<String, Long> {
 
     ConcurrentHashMap<String, Long> map = new ConcurrentHashMap<>();
 
-    public PeerVertexMap(){}
+    public PeerVertexIDMap() {
+    }
 
-    public PeerVertexMap(long id){
+    public PeerVertexIDMap(long id) {
         setID(id);
     }
 
@@ -32,7 +34,7 @@ public class PeerVertexMap extends AbstractChunk implements ConcurrentMap<String
     }
 
     @Override
-    public void putAll(@NotNull Map<? extends String, ? extends Long> map) {
+    public synchronized void putAll(@NotNull Map<? extends String, ? extends Long> map) {
         this.map.putAll(map);
     }
 
@@ -95,8 +97,8 @@ public class PeerVertexMap extends AbstractChunk implements ConcurrentMap<String
     }
 
     @Override
-    public boolean replace(@NotNull String string, @NotNull Long aLong, @NotNull Long long1) {
-        return map.replace(string, aLong, long1);
+    public boolean replace(@NotNull String string, @NotNull Long aLong, @NotNull Long vertex1) {
+        return map.replace(string, aLong, vertex1);
     }
 
     @Override
@@ -117,12 +119,14 @@ public class PeerVertexMap extends AbstractChunk implements ConcurrentMap<String
     public void importObject(Importer p_importer) {
         int size = 0;
         size = p_importer.readInt(size);
-        for (int i = 0; i < size; i++) {
-            String key = "";
-            long value = 0;
-            key = p_importer.readString(key);
-            value = p_importer.readLong(value);
-            map.put(key, value);
+        if (size > 0) {
+            for (int i = 0; i < size; i++) {
+                String key = "";
+                long v = ChunkID.INVALID_ID;
+                key = p_importer.readString(key);
+                v = p_importer.readLong(v);
+                map.put(key, v);
+            }
         }
     }
 
@@ -133,7 +137,7 @@ public class PeerVertexMap extends AbstractChunk implements ConcurrentMap<String
         for (String string : keySet()) {
             size += ObjectSizeUtil.sizeofString(string);
         }
-        size += map.size() * Long.BYTES;
+        size += Long.BYTES * map.size();
         return size;
     }
 }
