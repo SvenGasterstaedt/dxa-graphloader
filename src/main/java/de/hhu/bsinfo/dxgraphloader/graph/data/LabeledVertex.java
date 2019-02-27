@@ -25,19 +25,19 @@ public class LabeledVertex extends Vertex{
 
     @Override
     public void exportObject(Exporter exporter) {
-        exporter.writeLongArray(edges);
+        super.exportObject(exporter);
         exporter.writeString(label);
     }
 
     @Override
     public void importObject(Importer importer) {
-        importer.readLongArray(edges);
+        super.importObject(importer);
         importer.readString(label);
     }
 
     @Override
     public int sizeofObject() {
-        return ObjectSizeUtil.sizeofLongArray(edges)+ ObjectSizeUtil.sizeofString(label);
+        return super.sizeofObject()+ ObjectSizeUtil.sizeofString(label);
     }
 
 }

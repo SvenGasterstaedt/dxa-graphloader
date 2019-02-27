@@ -10,7 +10,9 @@ public class Edge extends AbstractChunk {
     protected long from   = ChunkID.INVALID_ID;
     protected long to     = ChunkID.INVALID_ID;
 
-    public Edge(){}
+    public Edge(long id){
+        setID(id);
+    }
 
     public Edge(long p_id,long from,long to){
         super(p_id);
@@ -22,12 +24,20 @@ public class Edge extends AbstractChunk {
         return from;
     }
 
-    public void setFrom(long from) {
-        this.from = from;
+    public void setEndPoint(Vertex start, Vertex end){
+        from = start.getID();
+        to = end.getID();
+
+        start.addNeighbor(this.getID());
+        end.addNeighbor(this.getID());
     }
 
     public long getTo() {
         return to;
+    }
+
+    public void setFrom(long from) {
+        this.from = from;
     }
 
     public void setTo(long to) {

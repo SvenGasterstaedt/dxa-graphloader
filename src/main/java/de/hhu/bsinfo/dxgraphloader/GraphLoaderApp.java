@@ -1,17 +1,14 @@
 package de.hhu.bsinfo.dxgraphloader;
 
-import de.hhu.bsinfo.dxgraphloader.app.GraphLoader;
-import de.hhu.bsinfo.dxgraphloader.app.LoadChunkManagerJob;
-import de.hhu.bsinfo.dxgraphloader.app.data.ChunkIDArray;
-import de.hhu.bsinfo.dxgraphloader.formats.SupportedFormats;
-import de.hhu.bsinfo.dxgraphloader.formats.parsers.GraphFormatReader;
+import de.hhu.bsinfo.dxgraphloader.loader.GraphLoader;
 import de.hhu.bsinfo.dxram.app.AbstractApplication;
 import de.hhu.bsinfo.dxram.boot.BootService;
 import de.hhu.bsinfo.dxram.chunk.ChunkService;
 import de.hhu.bsinfo.dxram.engine.DXRAMVersion;
 import de.hhu.bsinfo.dxram.generated.BuildConfig;
-import de.hhu.bsinfo.dxram.job.AbstractJob;
 import de.hhu.bsinfo.dxram.job.JobService;
+import de.hhu.bsinfo.dxram.nameservice.NameserviceService;
+import de.hhu.bsinfo.dxram.sync.SynchronizationService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -43,16 +40,25 @@ public class GraphLoaderApp extends AbstractApplication {
         final BootService bootService = getService(BootService.class);
         final JobService jobService = getService(JobService.class);
         final ChunkService chunkService = getService(ChunkService.class);
-        final GraphLoader graphLoader = new GraphLoader(bootService, jobService, chunkService);
+        final SynchronizationService synchronizationService = getService(SynchronizationService.class);
+        final NameserviceService nameserviceService = getService(NameserviceService.class);
 
-        if (p_args.length < 2) {
-            LOGGER.error("Parameters required! <format> <files>\nTerminated!");
+        final GraphLoader graphLoader = new GraphLoader(bootService, jobService, chunkService,nameserviceService,synchronizationService);
+
+
+        if (p_args.length < 3) {
+            LOGGER.error("Parameters required! <int numWorkers> <boolean parseWhileReading> <String format> <Stringpath files>\nTerminated!");
             return;
         }
-
-
-        String format = p_args[0].toUpperCase();
-        String[] file_paths = Arrays.copyOfRange(p_args, 1, p_args.length);
+        int numWorkers;
+        try {
+            numWorkers = Integer.parseInt(p_args[0]);
+        }catch(Exception e){
+            LOGGER.error("Couldn't parse args!");
+            return;
+        }
+        String format = p_args[1].toUpperCase();
+        String[] file_paths = Arrays.copyOfRange(p_args, 2, p_args.length);
         if (!graphLoader.supportedFormats.isSupported(format)) {
             LOGGER.error(format + " is no not supported!");
             LOGGER.info("List of supported formats:");
@@ -68,7 +74,14 @@ public class GraphLoaderApp extends AbstractApplication {
                 return;
             }
         }
-        graphLoader.loadFormat(format,file_paths);
+        //prints id of the distrubuted object table
+        long l = graphLoader.loadFormat(format,file_paths,numWorkers).getID();
+        try {
+            sleep(100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println(Long.toHexString(l));
     }
 
     @Override

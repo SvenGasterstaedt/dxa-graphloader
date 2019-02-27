@@ -7,7 +7,9 @@ public class WeightedEdge extends Edge {
 
     protected int weighted_value = 0;
 
-    public WeightedEdge(){}
+    public WeightedEdge(long id){
+        super(id);
+    }
 
     public WeightedEdge(long p_id,long from,long to, int weighted_value){
         super(p_id,from,to);
