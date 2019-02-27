@@ -10,8 +10,7 @@ First set *m_enabled* to *true* and set the amount of workers per peer.
 ```JSON
 "JobComponent": {
       "m_enabled": true,
-      "m_numWorkers": VALUE,
-      ...,
+      "m_numWorkers": VALUE
 },
 ```
 
@@ -20,13 +19,10 @@ then you can increase the duration to time out to give the application some time
 
 ```JSON
 "NetworkComponent": {
-      ...,
       "m_nioConfig": {
-          ...,
           "m_value": VALUE,
           "m_unit": "ms"
-        },
-        ...
+        }
 }
 ```
 </p>
