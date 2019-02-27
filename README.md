@@ -2,7 +2,7 @@
 This is a graph loading library/application for some formats for the distrubuted in-memory system 
 [DXRAM](https://github.com/hhu-bsinfo/dxram/) as part of my Bachelor thesis.
 
-#SetUp
+## SetUp
 <details><summary>CLICK ME</summary><p>
 To run this application, its recommended to edit the default configs of [DXRAM]()
 First set *m_enabled* to *true* and set the amount of workers per peer.
@@ -28,8 +28,8 @@ then you can increase the duration to time out to give the application some time
 </p>
 </details>
 
-#API
+## API
 This app can be run as DXRAM Application or used as library.
-# License
+## License
 Copyright (C) 2018 Heinrich-Heine-Universitaet Duesseldorf, Institute of Computer Science, Department Operating Systems.
 Licensed under the [GNU General Public License](LICENSE.md).
