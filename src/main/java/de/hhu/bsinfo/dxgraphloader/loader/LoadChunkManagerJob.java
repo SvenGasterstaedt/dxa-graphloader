@@ -1,11 +1,27 @@
+/*
+ * Copyright (C) 2018 Heinrich-Heine-Universitaet Duesseldorf, Institute of Computer Science,
+ * Department Operating Systems
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
+
 package de.hhu.bsinfo.dxgraphloader.loader;
 
 import de.hhu.bsinfo.dxgraphloader.GraphLoaderApp;
 import de.hhu.bsinfo.dxgraphloader.graph.data.Vertex;
-import de.hhu.bsinfo.dxgraphloader.loader.data.ChunkIDArray;
+import de.hhu.bsinfo.dxgraphloader.loader.data.LongArray;
 import de.hhu.bsinfo.dxgraphloader.loader.data.GraphObject;
-import de.hhu.bsinfo.dxgraphloader.loader.data.StringArray;
-import de.hhu.bsinfo.dxgraphloader.loader.data.StringArrayFinder;
+import de.hhu.bsinfo.dxgraphloader.loader.data.KeyArray;
+import de.hhu.bsinfo.dxgraphloader.loader.data.PeerIdsArray;
 import de.hhu.bsinfo.dxgraphloader.util.IDUtils;
 import de.hhu.bsinfo.dxmem.data.ChunkID;
 import de.hhu.bsinfo.dxram.boot.BootService;
@@ -33,7 +49,7 @@ import static de.hhu.bsinfo.dxgraphloader.loader.GraphLoader.LOAD_LOCK;
 import static java.lang.Thread.sleep;
 
 
-public class LoadChunkManagerJob extends AbstractJob {
+public final class LoadChunkManagerJob extends AbstractJob {
 
 
     private static final Logger LOGGER = LogManager.getFormatterLogger(GraphLoaderApp.class.getSimpleName());
@@ -75,8 +91,8 @@ public class LoadChunkManagerJob extends AbstractJob {
         GraphObject graphObject = new GraphObject(distributedObjectTableID);
         chunkService.get().get(graphObject);
 
-        ChunkIDArray chunkIDArray = new ChunkIDArray(chunkArrayID);
-        chunkLocalService.getLocal().get(chunkIDArray);
+        LongArray longArray = new LongArray(chunkArrayID);
+        chunkLocalService.getLocal().get(longArray);
         Queue<Long> chunkList = new ConcurrentLinkedQueue<>();
         List<LoadChunkLocalJob> jobList = new ArrayList<>();
 
@@ -88,13 +104,13 @@ public class LoadChunkManagerJob extends AbstractJob {
         }
 
 
-        long[] chunkIDs = chunkIDArray.getIds();
+        long[] chunkIDs = longArray.getIds();
 
         for (long id : chunkIDs) {
             chunkList.add(id);
             //LOGGER.debug(Long.toHexString(id) + " added to queue!");
         }
-        chunkService.remove().remove(chunkIDArray);
+        chunkService.remove().remove(longArray);
 
         {
             int loadBarrier = BarrierID.INVALID_ID;
@@ -130,7 +146,7 @@ public class LoadChunkManagerJob extends AbstractJob {
             jobList.clear();
 
             LOGGER.info("Storing Remote Keys!");
-            StringArrayFinder finder = new StringArrayFinder(bootService.getOnlinePeerNodeIDs().size());
+            PeerIdsArray finder = new PeerIdsArray(bootService.getOnlinePeerNodeIDs().size());
 
             long[] keys_id = new long[bootService.getOnlinePeerNodeIDs().size()];
 
@@ -151,16 +167,16 @@ public class LoadChunkManagerJob extends AbstractJob {
                     smallSet.add(iterator.next());
 
                     if (smallSet.size() > 5324 * 32 || !iterator.hasNext()) {
-                        final StringArray stringArray = new StringArray(smallSet);
-                        while (stringArray.getID() == ChunkID.INVALID_ID) {
-                            chunkService.create().create(bootService.getOnlinePeerNodeIDs().get(i), stringArray);
+                        final KeyArray keyArray = new KeyArray(smallSet);
+                        while (keyArray.getID() == ChunkID.INVALID_ID) {
+                            chunkService.create().create(bootService.getOnlinePeerNodeIDs().get(i), keyArray);
                         }
                         boolean status = false;
                         do {
-                            status = chunkService.put().put(stringArray);
+                            status = chunkService.put().put(keyArray);
                         } while (!status);
-                        LOGGER.debug("Created %s!", Long.toHexString(stringArray.getID()));
-                        ids[pos] = stringArray.getID();
+                        LOGGER.debug("Created %s!", Long.toHexString(keyArray.getID()));
+                        ids[pos] = keyArray.getID();
                         pos++;
                         smallSet = new HashSet<>();
                     }
@@ -177,14 +193,14 @@ public class LoadChunkManagerJob extends AbstractJob {
 
             LOGGER.info("Starting Synchronization!");
             long[] finderIDs = status.getCustomData();
-            StringArrayFinder[] finders = new StringArrayFinder[finderIDs.length];
+            PeerIdsArray[] finders = new PeerIdsArray[finderIDs.length];
             for (int i = 0; i < finderIDs.length; i++) {
-                finders[i] = new StringArrayFinder(finderIDs[i]);
+                finders[i] = new PeerIdsArray(finderIDs[i]);
                 chunkService.get().get(finders);
                 for (long l : finders[i].getArray(graphObject.getPeerPos(bootService.getNodeID()))) {
                     if (l == ChunkID.INVALID_ID) continue;
                     LOGGER.debug("Stored '%s'", Long.toHexString(l));
-                    StringArray str = new StringArray(l);
+                    KeyArray str = new KeyArray(l);
                     chunkService.get().get(str);
                     for (String s : str.getKeys()) {
                         Long value = localVertexMap.putIfAbsent(s, ChunkID.INVALID_ID);

@@ -1,7 +1,23 @@
+/*
+ * Copyright (C) 2018 Heinrich-Heine-Universitaet Duesseldorf, Institute of Computer Science,
+ * Department Operating Systems
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
+
 package de.hhu.bsinfo.dxgraphloader.loader;
 
 import de.hhu.bsinfo.dxgraphloader.GraphLoaderApp;
-import de.hhu.bsinfo.dxgraphloader.loader.data.ChunkIDArray;
+import de.hhu.bsinfo.dxgraphloader.loader.data.LongArray;
 import de.hhu.bsinfo.dxgraphloader.loader.data.FileChunk;
 import de.hhu.bsinfo.dxgraphloader.loader.data.GraphObject;
 import de.hhu.bsinfo.dxgraphloader.loader.formats.FileChunkCreator;
@@ -160,14 +176,14 @@ public final class GraphLoader {
                 nameserviceService.register(loadBarrier, LOAD_LOCK);
 
                 {
-                    ChunkIDArray[] chunkIDArray = new ChunkIDArray[peers.size()];
+                    LongArray[] longArray = new LongArray[peers.size()];
                     for (int i = 0; i < peers.size(); i++) {
-                        chunkIDArray[i] = new ChunkIDArray(peerChunkList.get(i).toArray(new Long[0]));
-                        chunkService.create().create(peers.get(i), chunkIDArray[i]);
-                        chunkService.put().put(chunkIDArray[i]);
+                        longArray[i] = new LongArray(peerChunkList.get(i).toArray(new Long[0]));
+                        chunkService.create().create(peers.get(i), longArray[i]);
+                        chunkService.put().put(longArray[i]);
 
                         //start jobs (local and remote)
-                        startJobsOnRemote(peers.get(i), chunkIDArray[i].getID(), graphFormat.getGraphFormatReader(), workerCount);
+                        startJobsOnRemote(peers.get(i), longArray[i].getID(), graphFormat.getGraphFormatReader(), workerCount);
                     }
                 }
                 jobService.waitForLocalJobsToFinish();

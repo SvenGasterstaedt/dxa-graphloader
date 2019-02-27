@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2018 Heinrich-Heine-Universitaet Duesseldorf, Institute of Computer Science,
+ * Department Operating Systems
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
+
 package de.hhu.bsinfo.dxgraphloader.loader.data;
 
 import de.hhu.bsinfo.dxmem.data.AbstractChunk;
@@ -7,20 +23,20 @@ import de.hhu.bsinfo.dxutils.serialization.Importer;
 
 import java.util.Arrays;
 
-public class ChunkIDArray extends AbstractChunk {
+public final class LongArray extends AbstractChunk {
 
     private long[] ids;
 
-    public ChunkIDArray(final long chunkId) {
+    public LongArray(final long chunkId) {
         super();
         setID(chunkId);
     }
 
-    public ChunkIDArray(final long[] ids) {
+    public LongArray(final long[] ids) {
         this.ids = ids;
     }
 
-    public ChunkIDArray(final Long[] ids) {
+    public LongArray(final Long[] ids) {
         this.ids = new long[ids.length];
         for(int i = 0; i < ids.length; i++){
             this.ids[i] = ids[i];

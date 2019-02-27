@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2018 Heinrich-Heine-Universitaet Duesseldorf, Institute of Computer Science,
+ * Department Operating Systems
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
+
 package de.hhu.bsinfo.dxgraphloader.formats.readers;
 
 import de.hhu.bsinfo.dxgraphloader.graph.data.Vertex;
@@ -14,8 +30,19 @@ import java.util.ArrayList;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-@SuppressWarnings("Duplicates")
-public class NeighborListReader extends GraphFormatReader {
+/**
+ * <h1>NeighborListReader</h1>
+ * Reader for EdgeList:
+ * [vertex1][tab][vertex2][tab][vertex3][tab][vertex4][tab][vertex5][\n]
+ *
+ * line wise.
+ *
+ * @author Sven Gasterstaedt
+ * @version 1.0
+ * @since 2019-03-15
+ */
+
+public final class NeighborListReader extends GraphFormatReader {
 
 
     public NeighborListReader(GraphObject graphObject, ConcurrentHashMap<String, Long> peerVertexMap, ArrayList<Set<String>> remoteKeys, ChunkLocalService chunkLocalService, BootService bootService) {
