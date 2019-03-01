@@ -16,47 +16,58 @@
 
 package de.hhu.bsinfo.dxgraphloader.loader.data;
 
+import java.util.HashSet;
+
 import de.hhu.bsinfo.dxmem.data.AbstractChunk;
-import de.hhu.bsinfo.dxmem.data.ChunkID;
+import de.hhu.bsinfo.dxutils.serialization.Distributable;
 import de.hhu.bsinfo.dxutils.serialization.Exporter;
 import de.hhu.bsinfo.dxutils.serialization.Importer;
 import de.hhu.bsinfo.dxutils.serialization.ObjectSizeUtil;
 
-public final class FileChunk extends AbstractChunk {
+public final class KeyArray extends AbstractChunk implements Distributable {
 
+    private String[] m_keys;
 
-    private byte[] m_data;
-    private boolean m_hasNext = true;
+    @SuppressWarnings("unused")
+    public KeyArray() {
+    }
 
+    public String[] getKeys() {
+        return m_keys;
+    }
 
-    public FileChunk(final long p_id) {
+    public KeyArray(final long p_id) {
         setID(p_id);
     }
 
-    public FileChunk(final byte[] p_fileData) {
-        m_data = p_fileData;
-        setID(ChunkID.INVALID_ID);
-    }
-
-    public byte[] getContents() {
-        return m_data;
+    public KeyArray(final HashSet<String> p_keys) {
+        m_keys = p_keys.toArray(new String[0]);
     }
 
     @Override
     public void exportObject(final Exporter p_exporter) {
-        p_exporter.writeByteArray(m_data);
-        p_exporter.writeBoolean(m_hasNext);
+        p_exporter.writeInt(m_keys.length);
+        for (String s : m_keys) {
+            p_exporter.writeString(s);
+        }
     }
-
 
     @Override
     public void importObject(final Importer p_importer) {
-        m_data = p_importer.readByteArray(m_data);
-        m_hasNext = p_importer.readBoolean(m_hasNext);
+        int size = 0;
+        size = p_importer.readInt(size);
+        m_keys = new String[size];
+        for (int i = 0; i < size; i++) {
+            m_keys[i] = p_importer.readString(m_keys[i]);
+        }
     }
 
     @Override
     public int sizeofObject() {
-        return ObjectSizeUtil.sizeofByteArray(m_data) + ObjectSizeUtil.sizeofBoolean();
+        int size = Integer.BYTES;
+        for (String s : m_keys) {
+            size += ObjectSizeUtil.sizeofString(s);
+        }
+        return size;
     }
 }

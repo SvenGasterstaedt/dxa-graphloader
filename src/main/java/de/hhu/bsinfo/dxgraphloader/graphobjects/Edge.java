@@ -14,49 +14,66 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-package de.hhu.bsinfo.dxgraphloader.loader.data;
+package de.hhu.bsinfo.dxgraphloader.graphobjects;
 
 import de.hhu.bsinfo.dxmem.data.AbstractChunk;
 import de.hhu.bsinfo.dxmem.data.ChunkID;
 import de.hhu.bsinfo.dxutils.serialization.Exporter;
 import de.hhu.bsinfo.dxutils.serialization.Importer;
-import de.hhu.bsinfo.dxutils.serialization.ObjectSizeUtil;
 
-public final class FileChunk extends AbstractChunk {
+public class Edge extends AbstractChunk {
 
+    protected long from   = ChunkID.INVALID_ID;
+    protected long to     = ChunkID.INVALID_ID;
 
-    private byte[] m_data;
-    private boolean m_hasNext = true;
-
-
-    public FileChunk(final long p_id) {
-        setID(p_id);
+    public Edge(long id){
+        setID(id);
     }
 
-    public FileChunk(final byte[] p_fileData) {
-        m_data = p_fileData;
-        setID(ChunkID.INVALID_ID);
+    public Edge(long p_id,long from,long to){
+        super(p_id);
+        this.from = from;
+        this.to = to;
     }
 
-    public byte[] getContents() {
-        return m_data;
+    public long getFrom() {
+        return from;
+    }
+
+    public void setEndPoint(Vertex start, Vertex end){
+        from = start.getID();
+        to = end.getID();
+
+        start.addNeighbor(this.getID());
+        end.addNeighbor(this.getID());
+    }
+
+    public long getTo() {
+        return to;
+    }
+
+    public void setFrom(long from) {
+        this.from = from;
+    }
+
+    public void setTo(long to) {
+        this.to = to;
     }
 
     @Override
-    public void exportObject(final Exporter p_exporter) {
-        p_exporter.writeByteArray(m_data);
-        p_exporter.writeBoolean(m_hasNext);
+    public void exportObject(Exporter exporter) {
+        exporter.writeLong(from);
+        exporter.writeLong(to);
     }
 
-
     @Override
-    public void importObject(final Importer p_importer) {
-        m_data = p_importer.readByteArray(m_data);
-        m_hasNext = p_importer.readBoolean(m_hasNext);
+    public void importObject(Importer importer) {
+        importer.readLong(from);
+        importer.readLong(to);
     }
 
     @Override
     public int sizeofObject() {
-        return ObjectSizeUtil.sizeofByteArray(m_data) + ObjectSizeUtil.sizeofBoolean();
+        return 2*8;
     }
 }

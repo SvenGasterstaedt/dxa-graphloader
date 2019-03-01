@@ -14,37 +14,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-package de.hhu.bsinfo.dxgraphloader.util;
+package de.hhu.bsinfo.dxgraphloader.loader.formats;
 
-import java.util.Objects;
+import de.hhu.bsinfo.dxgraphloader.loader.data.FileChunk;
 
-public class Tuple<X,Y> {
-    private final X x;
-    private final Y y;
-    public Tuple(X x,Y y){
-        this.x = x;
-        this.y = y;
-    }
+public abstract class AbstractFileChunkCreator {
 
-    public X getX() {
-        return x;
-    }
+    protected short m_cycle = 0;
 
-    public Y getY(){
-        return y;
-    }
+    public abstract boolean hasRemaining();
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Tuple<?, ?> tuple = (Tuple<?, ?>) o;
-        return Objects.equals(x, tuple.x) &&
-                Objects.equals(y, tuple.y);
-    }
+    public abstract FileChunk getNextChunk();
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(x, y);
-    }
+    public abstract void setCycle(short p_cycle);
 }

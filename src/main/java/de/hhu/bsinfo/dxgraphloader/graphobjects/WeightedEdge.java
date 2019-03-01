@@ -14,49 +14,40 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-package de.hhu.bsinfo.dxgraphloader.loader.data;
+package de.hhu.bsinfo.dxgraphloader.graphobjects;
 
-import de.hhu.bsinfo.dxmem.data.AbstractChunk;
-import de.hhu.bsinfo.dxmem.data.ChunkID;
 import de.hhu.bsinfo.dxutils.serialization.Exporter;
 import de.hhu.bsinfo.dxutils.serialization.Importer;
-import de.hhu.bsinfo.dxutils.serialization.ObjectSizeUtil;
 
-public final class FileChunk extends AbstractChunk {
+public class WeightedEdge extends Edge {
 
+    private int m_weightedValue = 0;
 
-    private byte[] m_data;
-    private boolean m_hasNext = true;
-
-
-    public FileChunk(final long p_id) {
-        setID(p_id);
+    public WeightedEdge(long p_id){
+        super(p_id);
     }
 
-    public FileChunk(final byte[] p_fileData) {
-        m_data = p_fileData;
-        setID(ChunkID.INVALID_ID);
-    }
-
-    public byte[] getContents() {
-        return m_data;
+    public WeightedEdge(long p_id,long p_from,long p_to, int p_weightedValue){
+        super(p_id,p_from,p_to);
+        m_weightedValue = p_weightedValue;
     }
 
     @Override
-    public void exportObject(final Exporter p_exporter) {
-        p_exporter.writeByteArray(m_data);
-        p_exporter.writeBoolean(m_hasNext);
+    public void exportObject(Exporter p_exporter) {
+        p_exporter.writeLong(from);
+        p_exporter.writeLong(to);
+        p_exporter.writeInt(m_weightedValue);
     }
 
-
     @Override
-    public void importObject(final Importer p_importer) {
-        m_data = p_importer.readByteArray(m_data);
-        m_hasNext = p_importer.readBoolean(m_hasNext);
+    public void importObject(Importer p_importer) {
+        p_importer.readLong(from);
+        p_importer.readLong(to);
+        p_importer.readInt(m_weightedValue);
     }
 
     @Override
     public int sizeofObject() {
-        return ObjectSizeUtil.sizeofByteArray(m_data) + ObjectSizeUtil.sizeofBoolean();
+        return 20;
     }
 }

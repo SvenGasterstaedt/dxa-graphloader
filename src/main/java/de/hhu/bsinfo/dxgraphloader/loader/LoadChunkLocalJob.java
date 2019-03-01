@@ -1,18 +1,20 @@
-package de.hhu.bsinfo.dxgraphloader.loader;
+/*
+ * Copyright (C) 2018 Heinrich-Heine-Universitaet Duesseldorf, Institute of Computer Science,
+ * Department Operating Systems
+ *
+ * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
+ * License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any
+ * later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+ * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>
+ */
 
-import de.hhu.bsinfo.dxgraphloader.GraphLoaderApp;
-import de.hhu.bsinfo.dxgraphloader.loader.data.GraphObject;
-import de.hhu.bsinfo.dxgraphloader.loader.data.FileChunk;
-import de.hhu.bsinfo.dxgraphloader.loader.formats.GraphFormatReader;
-import de.hhu.bsinfo.dxram.boot.BootService;
-import de.hhu.bsinfo.dxram.chunk.ChunkLocalService;
-import de.hhu.bsinfo.dxram.chunk.ChunkService;
-import de.hhu.bsinfo.dxram.job.AbstractJob;
-import de.hhu.bsinfo.dxram.lookup.overlay.storage.BarrierID;
-import de.hhu.bsinfo.dxram.nameservice.NameserviceService;
-import de.hhu.bsinfo.dxram.sync.SynchronizationService;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+package de.hhu.bsinfo.dxgraphloader.loader;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -22,104 +24,123 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
-public class LoadChunkLocalJob extends AbstractJob {
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
+import de.hhu.bsinfo.dxgraphloader.GraphLoaderApp;
+import de.hhu.bsinfo.dxgraphloader.loader.data.FileChunk;
+import de.hhu.bsinfo.dxgraphloader.loader.data.GraphObject;
+import de.hhu.bsinfo.dxgraphloader.loader.formats.AbstractGraphFormatReader;
+import de.hhu.bsinfo.dxram.boot.BootService;
+import de.hhu.bsinfo.dxram.chunk.ChunkLocalService;
+import de.hhu.bsinfo.dxram.chunk.ChunkService;
+import de.hhu.bsinfo.dxram.job.AbstractJob;
+import de.hhu.bsinfo.dxram.job.JobService;
+import de.hhu.bsinfo.dxram.lookup.overlay.storage.BarrierID;
+import de.hhu.bsinfo.dxram.nameservice.NameserviceService;
+import de.hhu.bsinfo.dxram.sync.SynchronizationService;
+
+public final class LoadChunkLocalJob extends AbstractJob {
 
     private static final Logger LOGGER = LogManager.getFormatterLogger(GraphLoaderApp.class.getSimpleName());
-    private static final Class[] graphFormatConstructor = new Class[]{GraphObject.class, ConcurrentHashMap.class, ArrayList.class, ChunkLocalService.class, BootService.class};
+    private static final Class[] GRAPHFORMATCONSTRUCTOR = new Class[] {GraphObject.class, ConcurrentHashMap.class,
+            ArrayList.class, ChunkLocalService.class, BootService.class};
 
-    private Queue<Long> queue;
-    private String classPath;
-    private GraphObject graphObject;
+    private Queue<Long> m_queue;
+    private String m_classpath;
+    private GraphObject m_graph;
 
-    private ChunkService chunkService;
-    private ChunkLocalService chunkLocalService;
-    private BootService bootService;
-    private NameserviceService nameserviceService;
-    private SynchronizationService synchronizationService;
-    private Lock queueLock;
+    private GraphLoaderContext m_context;
+    private Lock m_lock;
 
-    private ConcurrentHashMap<String, Long> localKeys;
-    private ArrayList<Set<String>> remoteKeys;
+    private ConcurrentHashMap<String, Long> m_localKeys;
+    private ArrayList<Set<String>> m_remoteKeys;
 
-    boolean finished = false;
+    private boolean m_finished;
 
+    @SuppressWarnings({"unused", "WeakerAccess"})
+    public LoadChunkLocalJob(final Queue<Long> p_queue, final String p_classpath, final Lock p_lock,
+            final GraphObject p_graph,
+            final ConcurrentHashMap<String, Long> p_localKeys, final ArrayList<Set<String>> p_remoteKeys) {
 
-    public LoadChunkLocalJob(final Queue<Long> queue, final String classPath, final Lock queueLock, final GraphObject graphObject, ConcurrentHashMap<String, Long> localKeys, ArrayList<Set<String>> remoteKeys) {
-        this.queue = queue;
-        this.classPath = classPath;
-        this.queueLock = queueLock;
-        this.graphObject = graphObject;
-        this.remoteKeys = remoteKeys;
-        this.localKeys = localKeys;
+        m_context = new GraphLoaderContext(getService(BootService.class), getService(ChunkService.class),
+                getService(ChunkLocalService.class), getService(JobService.class), getService(NameserviceService.class),
+                getService(SynchronizationService.class));
+
+        m_graph = p_graph;
+        m_remoteKeys = p_remoteKeys;
+        m_localKeys = p_localKeys;
+
+        m_classpath = p_classpath;
+
+        m_queue = p_queue;
+        m_lock = p_lock;
+
     }
 
-    public void setServicesForLocal(final BootService bootService, final ChunkService chunkService, final ChunkLocalService chunkLocalService, final NameserviceService nameserviceService, final SynchronizationService synchronizationService) {
-        this.bootService = bootService;
-        this.chunkService = chunkService;
-        this.chunkLocalService = chunkLocalService;
-        this.nameserviceService = nameserviceService;
-        this.synchronizationService = synchronizationService;
+    void setServicesForLocal(final GraphLoaderContext p_context) {
+        m_context = p_context;
     }
 
     @Override
     public void execute() {
-        if (chunkService == null || bootService == null || chunkLocalService == null || nameserviceService == null || synchronizationService == null) {
-            chunkLocalService = getService(ChunkLocalService.class);
-            bootService = getService(BootService.class);
-            chunkService = getService(ChunkService.class);
-            nameserviceService = getService(NameserviceService.class);
-            synchronizationService = getService(SynchronizationService.class);
-        }
-        if (chunkService == null || bootService == null || chunkLocalService == null || nameserviceService == null || synchronizationService == null) {
+        if (m_context == null) {
             LOGGER.error("Started Job on local scope without setting Services");
             return;
         }
 
         int stepBarrier = BarrierID.INVALID_ID;
         while (stepBarrier == BarrierID.INVALID_ID) {
-            stepBarrier = (int) nameserviceService.getChunkID(GraphLoader.LOAD_LOCK, 1000);
+            stepBarrier = (int) m_context.getNameserviceService().getChunkID(GraphLoader.LOAD_LOCK, 1000);
         }
 
-        while (queue.size() > 0) {
+        while (!m_queue.isEmpty()) {
+
             long chunkID;
             boolean isLockAcquired = false;
+
             try {
-                isLockAcquired = queueLock.tryLock(100, TimeUnit.MILLISECONDS);
+
+                isLockAcquired = m_lock.tryLock(100, TimeUnit.MILLISECONDS);
+
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            if(isLockAcquired) {
+            if (isLockAcquired) {
                 try {
-                    chunkID = queue.remove();
+                    chunkID = m_queue.remove();
                 } finally {
-                    queueLock.unlock();
+                    m_lock.unlock();
                 }
                 FileChunk fileChunk = new FileChunk(chunkID);
-                chunkLocalService.getLocal().get(fileChunk);
+                m_context.getChunkLocalService().getLocal().get(fileChunk);
 
                 try {
 
-                    GraphFormatReader graphFormatReader = (GraphFormatReader) Class.forName(classPath)
-                            .getConstructor(graphFormatConstructor)
-                            .newInstance(graphObject, localKeys, remoteKeys, chunkLocalService, bootService);
+                    AbstractGraphFormatReader graphFormatReader = (AbstractGraphFormatReader) Class.forName(m_classpath)
+                            .getConstructor(GRAPHFORMATCONSTRUCTOR)
+                            .newInstance(m_graph, m_localKeys, m_remoteKeys, m_context.getChunkLocalService(),
+                                    m_context.getBootService());
 
                     graphFormatReader.readVertices(fileChunk.getContents());
 
-                    LOGGER.debug(Long.toHexString(chunkID) + " loaded!");
+                    LOGGER.debug("'%s' loaded!", Long.toHexString(chunkID));
 
-                } catch (ClassNotFoundException | InvocationTargetException | NoSuchMethodException | InstantiationException | IllegalAccessException e) {
+                } catch (ClassNotFoundException | IllegalAccessException | InstantiationException
+                        | InvocationTargetException | NoSuchMethodException e) {
                     e.printStackTrace();
                     break;
                 }
 
-                chunkService.remove().remove(fileChunk);
+                m_context.getChunkService().remove().remove(fileChunk);
             }
         }
         LOGGER.debug("Finished Load Chunk!");
-        finished = true;
+        m_finished = true;
     }
 
+    @SuppressWarnings("WeakerAccess")
     public boolean isFinished() {
-        return finished;
+        return m_finished;
     }
 }

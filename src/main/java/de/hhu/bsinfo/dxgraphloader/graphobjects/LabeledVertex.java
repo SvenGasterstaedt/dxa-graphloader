@@ -14,49 +14,46 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-package de.hhu.bsinfo.dxgraphloader.loader.data;
+package de.hhu.bsinfo.dxgraphloader.graphobjects;
 
-import de.hhu.bsinfo.dxmem.data.AbstractChunk;
-import de.hhu.bsinfo.dxmem.data.ChunkID;
 import de.hhu.bsinfo.dxutils.serialization.Exporter;
 import de.hhu.bsinfo.dxutils.serialization.Importer;
 import de.hhu.bsinfo.dxutils.serialization.ObjectSizeUtil;
 
-public final class FileChunk extends AbstractChunk {
+public class LabeledVertex extends Vertex{
 
+    private String label;
 
-    private byte[] m_data;
-    private boolean m_hasNext = true;
-
-
-    public FileChunk(final long p_id) {
-        setID(p_id);
+    public LabeledVertex(String label){
+        super();
+        this.label = label;
     }
 
-    public FileChunk(final byte[] p_fileData) {
-        m_data = p_fileData;
-        setID(ChunkID.INVALID_ID);
+    public LabeledVertex(long p_id, String label){
+        super(p_id);
+        this.label = label;
     }
 
-    public byte[] getContents() {
-        return m_data;
+    public LabeledVertex(long p_id, String label, int neighbor_count) {
+        super(p_id, neighbor_count);
+        this.label = label;
     }
 
     @Override
-    public void exportObject(final Exporter p_exporter) {
-        p_exporter.writeByteArray(m_data);
-        p_exporter.writeBoolean(m_hasNext);
+    public void exportObject(Exporter p_exporter) {
+        super.exportObject(p_exporter);
+        p_exporter.writeString(label);
     }
 
-
     @Override
-    public void importObject(final Importer p_importer) {
-        m_data = p_importer.readByteArray(m_data);
-        m_hasNext = p_importer.readBoolean(m_hasNext);
+    public void importObject(Importer p_importer) {
+        super.importObject(p_importer);
+        p_importer.readString(label);
     }
 
     @Override
     public int sizeofObject() {
-        return ObjectSizeUtil.sizeofByteArray(m_data) + ObjectSizeUtil.sizeofBoolean();
+        return super.sizeofObject()+ ObjectSizeUtil.sizeofString(label);
     }
+
 }
