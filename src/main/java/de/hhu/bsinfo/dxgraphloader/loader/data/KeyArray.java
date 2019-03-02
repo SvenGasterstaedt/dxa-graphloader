@@ -26,29 +26,34 @@ import de.hhu.bsinfo.dxutils.serialization.ObjectSizeUtil;
 
 public final class KeyArray extends AbstractChunk implements Distributable {
 
-    private String[] m_keys;
+    private long[] m_keys;
 
     @SuppressWarnings("unused")
     public KeyArray() {
-    }
-
-    public String[] getKeys() {
-        return m_keys;
     }
 
     public KeyArray(final long p_id) {
         setID(p_id);
     }
 
-    public KeyArray(final HashSet<String> p_keys) {
-        m_keys = p_keys.toArray(new String[0]);
+    public KeyArray(final HashSet<Long> p_keys) {
+        m_keys = new long[p_keys.size()];
+        int i = 0;
+        for (long l : p_keys) {
+            m_keys[i] = l;
+            i++;
+        }
+    }
+
+    public long[] getKeys() {
+        return m_keys;
     }
 
     @Override
     public void exportObject(final Exporter p_exporter) {
         p_exporter.writeInt(m_keys.length);
-        for (String s : m_keys) {
-            p_exporter.writeString(s);
+        for (long l : m_keys) {
+            p_exporter.writeLong(l);
         }
     }
 
@@ -56,18 +61,14 @@ public final class KeyArray extends AbstractChunk implements Distributable {
     public void importObject(final Importer p_importer) {
         int size = 0;
         size = p_importer.readInt(size);
-        m_keys = new String[size];
+        m_keys = new long[size];
         for (int i = 0; i < size; i++) {
-            m_keys[i] = p_importer.readString(m_keys[i]);
+            m_keys[i] = p_importer.readLong(m_keys[i]);
         }
     }
 
     @Override
     public int sizeofObject() {
-        int size = Integer.BYTES;
-        for (String s : m_keys) {
-            size += ObjectSizeUtil.sizeofString(s);
-        }
-        return size;
+        return Integer.BYTES + Long.BYTES * m_keys.length;
     }
 }

@@ -16,48 +16,41 @@
 
 package de.hhu.bsinfo.dxgraphloader.loader.data;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import de.hhu.bsinfo.dxmem.data.AbstractChunk;
+import de.hhu.bsinfo.dxmem.data.ChunkID;
 import de.hhu.bsinfo.dxutils.serialization.Exporter;
 import de.hhu.bsinfo.dxutils.serialization.Importer;
-import de.hhu.bsinfo.dxutils.serialization.ObjectSizeUtil;
 
-public final class PeerIdsArray extends AbstractChunk {
+public final class PeerVertexMap extends AbstractChunk {
 
-    private long[][] m_chunks = new long[0][0];
+    private final ConcurrentHashMap<Long, Long> m_map;
 
-    @SuppressWarnings("unused")
-    public PeerIdsArray() {
+    public PeerVertexMap() {
+        m_map = new ConcurrentHashMap<>();
     }
 
-    public PeerIdsArray(long p_id) {
+    public PeerVertexMap(final ConcurrentHashMap<Long, Long> p_map) {
+        m_map = p_map;
+    }
+
+    public PeerVertexMap(long p_id) {
+        m_map = new ConcurrentHashMap<>();
         setID(p_id);
     }
 
-    public PeerIdsArray(int p_size) {
-        m_chunks = new long[p_size][];
-        for (int i = 0; i < m_chunks.length; i++) {
-            m_chunks[i] = new long[0];
-        }
-    }
-
-    public void add(int p_index, long[] p_id) {
-        if (p_index >= 0 && p_index < m_chunks.length) {
-            m_chunks[p_index] = p_id;
-        }
-    }
-
-    public long[] getArray(int p_pos) {
-        if (p_pos >= 0 && p_pos < m_chunks.length) {
-            return m_chunks[p_pos];
-        }
-        return null;
+    public ConcurrentHashMap<Long, Long> getMap() {
+        return m_map;
     }
 
     @Override
     public void exportObject(Exporter p_exporter) {
-        p_exporter.writeInt(m_chunks.length);
-        for (long[] longArray : m_chunks) {
-            p_exporter.writeLongArray(longArray);
+        p_exporter.writeInt(m_map.size());
+        for (Map.Entry<Long, Long> entry : m_map.entrySet()) {
+            p_exporter.writeLong(entry.getKey());
+            p_exporter.writeLong(entry.getValue());
         }
     }
 
@@ -65,18 +58,19 @@ public final class PeerIdsArray extends AbstractChunk {
     public void importObject(Importer p_importer) {
         int size = 0;
         size = p_importer.readInt(size);
-        m_chunks = new long[size][];
-        for (int i = 0; i < size; i++) {
-            m_chunks[i] = p_importer.readLongArray(m_chunks[i]);
+        if (size > 0) {
+            for (int i = 0; i < size; i++) {
+                long key = 0;
+                long id = ChunkID.INVALID_ID;
+                key = p_importer.readLong(key);
+                id = p_importer.readLong(id);
+                m_map.put(key, id);
+            }
         }
     }
 
     @Override
     public int sizeofObject() {
-        int size = Integer.BYTES;
-        for (long[] longArray : m_chunks) {
-            size += ObjectSizeUtil.sizeofLongArray(longArray);
-        }
-        return size;
+        return Integer.BYTES + Long.BYTES * m_map.size() * 2;
     }
 }

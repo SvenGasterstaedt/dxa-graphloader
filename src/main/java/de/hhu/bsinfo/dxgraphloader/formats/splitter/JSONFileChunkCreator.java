@@ -26,7 +26,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 
-public class JSONGraphFileChunkCreator extends AbstractFileChunkCreator {
+public class JSONFileChunkCreator extends AbstractFileChunkCreator {
 
     private JsonReader m_reader;
 
@@ -37,7 +37,7 @@ public class JSONGraphFileChunkCreator extends AbstractFileChunkCreator {
     private int m_chunkSize;
     private String m_filepath;
 
-    public JSONGraphFileChunkCreator(final String p_filepath, final int p_chunkSize) {
+    public JSONFileChunkCreator(final String p_filepath, final int p_chunkSize) {
         m_filepath = p_filepath;
         m_chunkSize = p_chunkSize;
     }

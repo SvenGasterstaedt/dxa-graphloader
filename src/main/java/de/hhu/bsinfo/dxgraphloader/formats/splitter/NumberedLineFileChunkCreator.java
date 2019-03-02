@@ -17,58 +17,20 @@
 package de.hhu.bsinfo.dxgraphloader.formats.splitter;
 
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-import de.hhu.bsinfo.dxgraphloader.GraphLoaderApp;
 import de.hhu.bsinfo.dxgraphloader.loader.data.FileChunk;
-import de.hhu.bsinfo.dxgraphloader.loader.formats.AbstractFileChunkCreator;
 
-/**
- * <h1>SkippingLineFileChunkCreator</h1>
- * ChunkCreator, who skips lines for n bytes and stores them in a FileChunk.
- *
- * @author Sven Gasterstaedt
- * @version 1.0
- * @since 2019-03-15
- */
-public class SkippingLineFileChunkCreator extends AbstractFileChunkCreator {
+public class NumberedLineFileChunkCreator extends LineFileChunkCreator {
 
-    private static final Logger LOGGER = LogManager.getFormatterLogger(GraphLoaderApp.class.getSimpleName());
+    private static final Pattern M_PATTERN = Pattern.compile("\r\n|\r|\n");
 
-    int m_chunkSize;
-    private long m_bytesTotal;
-    byte[] m_content;
+    private long m_lineNumber = 0;
 
-    RandomAccessFile m_file;
-
-    public SkippingLineFileChunkCreator(String p_file, int p_chunkSize) {
-        try {
-            m_file = new RandomAccessFile(p_file, "r");
-            m_bytesTotal = m_file.length();
-            m_chunkSize = p_chunkSize;
-            m_content = new byte[p_chunkSize];
-        } catch (IOException e) {
-            e.printStackTrace();
-            LOGGER.error("IOException in AbstractFileChunkCreator");
-        }
-    }
-
-    @Override
-    public boolean hasRemaining() {
-        try {
-            return m_bytesTotal - m_file.getFilePointer() > 0;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return false;
-    }
-
-    long remaining() throws IOException {
-        return m_bytesTotal - m_file.getFilePointer();
+    public NumberedLineFileChunkCreator(String p_file, int p_chunkSize) {
+        super(p_file, p_chunkSize);
     }
 
     @SuppressWarnings("Duplicates")
@@ -79,6 +41,13 @@ public class SkippingLineFileChunkCreator extends AbstractFileChunkCreator {
                 if (remaining() < m_chunkSize) {
                     m_content = new byte[(int) remaining()]; //can be casted safely, because m_chunkSize is an Integer
                     m_file.read(m_content);
+
+                    m_content = ByteBuffer.allocate(Long.BYTES + m_content.length).putLong(m_lineNumber).put(m_content)
+                            .array();
+                    Matcher matcher = M_PATTERN.matcher(new String(m_content));
+                    while (matcher.find()) {
+                        m_lineNumber++;
+                    }
                     return new FileChunk(m_content);
                 }
 
@@ -89,8 +58,13 @@ public class SkippingLineFileChunkCreator extends AbstractFileChunkCreator {
                 if (hasRemaining()) {
                     remainingLine = (m_file.readLine() + '\n').getBytes();
                 }
-                m_content = ByteBuffer.allocate(m_content.length + remainingLine.length).put(m_content).put(
-                        remainingLine).array();
+                m_content = ByteBuffer.allocate(Long.BYTES + m_content.length + remainingLine.length).putLong(
+                        m_lineNumber).put(
+                        m_content).put(remainingLine).array();
+                Matcher matcher = M_PATTERN.matcher(new String(m_content));
+                while (matcher.find()) {
+                    m_lineNumber++;
+                }
                 return new FileChunk(m_content);
             }
         } catch (IOException ex) {
@@ -108,5 +82,4 @@ public class SkippingLineFileChunkCreator extends AbstractFileChunkCreator {
             e.printStackTrace();
         }
     }
-
 }

@@ -20,60 +20,54 @@ import de.hhu.bsinfo.dxmem.data.AbstractChunk;
 import de.hhu.bsinfo.dxmem.data.ChunkID;
 import de.hhu.bsinfo.dxutils.serialization.Exporter;
 import de.hhu.bsinfo.dxutils.serialization.Importer;
+import de.hhu.bsinfo.dxutils.serialization.ObjectSizeUtil;
 
 public class Edge extends AbstractChunk {
 
-    protected long from   = ChunkID.INVALID_ID;
-    protected long to     = ChunkID.INVALID_ID;
+    long[] m_connect = new long[] {ChunkID.INVALID_ID, ChunkID.INVALID_ID};
 
-    public Edge(long id){
+    public Edge() {
+    }
+
+    public Edge(long id) {
         setID(id);
     }
 
-    public Edge(long p_id,long from,long to){
+    public Edge(long p_id, long p_vrtxID1, long p_vrtxID2) {
         super(p_id);
-        this.from = from;
-        this.to = to;
+        m_connect[0] = p_vrtxID1;
+        m_connect[1] = p_vrtxID2;
     }
 
-    public long getFrom() {
-        return from;
+    public void setEndPoint(Vertex p_vrtx1, Vertex p_vrtx2) {
+        m_connect[0] = p_vrtx1.getID();
+        m_connect[1] = p_vrtx2.getID();
+        p_vrtx1.addNeighbor(getID());
+        p_vrtx2.addNeighbor(getID());
     }
 
-    public void setEndPoint(Vertex start, Vertex end){
-        from = start.getID();
-        to = end.getID();
-
-        start.addNeighbor(this.getID());
-        end.addNeighbor(this.getID());
+    public long[] getVertices() {
+        return m_connect;
     }
 
-    public long getTo() {
-        return to;
-    }
-
-    public void setFrom(long from) {
-        this.from = from;
-    }
-
-    public void setTo(long to) {
-        this.to = to;
+    public void setConnection(int p_index, long p_vrtxID) {
+        if (p_index > 0 && p_index < 2) {
+            m_connect[p_index] = p_vrtxID;
+        }
     }
 
     @Override
     public void exportObject(Exporter exporter) {
-        exporter.writeLong(from);
-        exporter.writeLong(to);
+        exporter.writeLongArray(m_connect);
     }
 
     @Override
     public void importObject(Importer importer) {
-        importer.readLong(from);
-        importer.readLong(to);
+        m_connect = importer.readLongArray(m_connect);
     }
 
     @Override
     public int sizeofObject() {
-        return 2*8;
+        return ObjectSizeUtil.sizeofLongArray(m_connect);
     }
 }

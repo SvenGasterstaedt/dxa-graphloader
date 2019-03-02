@@ -18,7 +18,7 @@ package de.hhu.bsinfo.dxgraphloader.formats;
 
 import de.hhu.bsinfo.dxgraphloader.loader.formats.GraphFormat;
 import de.hhu.bsinfo.dxgraphloader.formats.readers.NeighborListReader;
-import de.hhu.bsinfo.dxgraphloader.formats.splitter.SkippingLineNumberFileChunkCreator;
+import de.hhu.bsinfo.dxgraphloader.formats.splitter.NumberedLineFileChunkCreator;
 
 public class NeighborList extends GraphFormat {
     public NeighborList(final String... p_files) {
@@ -26,7 +26,7 @@ public class NeighborList extends GraphFormat {
 
         setCycles((short) 1);
 
-        setFileChunkCreator(new SkippingLineNumberFileChunkCreator(p_files[0], 16777216));
+        setFileChunkCreator(new NumberedLineFileChunkCreator(p_files[0], 16777216));
         setGraphFormatReader(NeighborListReader.class);
     }
 }

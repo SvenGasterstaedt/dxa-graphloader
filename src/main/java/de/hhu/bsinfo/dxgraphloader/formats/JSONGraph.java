@@ -17,7 +17,7 @@
 package de.hhu.bsinfo.dxgraphloader.formats;
 
 import de.hhu.bsinfo.dxgraphloader.formats.readers.EdgeListReader;
-import de.hhu.bsinfo.dxgraphloader.formats.splitter.JSONGraphFileChunkCreator;
+import de.hhu.bsinfo.dxgraphloader.formats.splitter.JSONFileChunkCreator;
 import de.hhu.bsinfo.dxgraphloader.loader.formats.GraphFormat;
 
 public class JSONGraph extends GraphFormat {
@@ -26,7 +26,7 @@ public class JSONGraph extends GraphFormat {
 
         setCycles((short) 1);
         //key format properties
-        setFileChunkCreator(new JSONGraphFileChunkCreator(p_files[0], 16777216));
+        setFileChunkCreator(new JSONFileChunkCreator(p_files[0], 16777216));
         setGraphFormatReader(EdgeListReader.class);
     }
 }

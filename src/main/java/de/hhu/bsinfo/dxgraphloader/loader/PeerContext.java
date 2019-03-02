@@ -7,7 +7,7 @@ import de.hhu.bsinfo.dxram.job.JobService;
 import de.hhu.bsinfo.dxram.nameservice.NameserviceService;
 import de.hhu.bsinfo.dxram.sync.SynchronizationService;
 
-public final class GraphLoaderContext {
+public final class PeerContext {
 
     private final BootService m_bootService;
     private final ChunkService m_chunkService;
@@ -33,7 +33,7 @@ public final class GraphLoaderContext {
      * @param p_chunkLocalService
      *         DxRam ChunkLocalService from the current peer
      */
-    public GraphLoaderContext(BootService p_bootService, ChunkService p_chunkService,
+    public PeerContext(BootService p_bootService, ChunkService p_chunkService,
             ChunkLocalService p_chunkLocalService, JobService p_jobService, NameserviceService p_nameserviceService,
             SynchronizationService p_synchronizationService) {
         m_bootService = p_bootService;

@@ -24,7 +24,7 @@ import org.apache.logging.log4j.Logger;
 
 import de.hhu.bsinfo.dxgraphloader.GraphLoaderApp;
 import de.hhu.bsinfo.dxgraphloader.loader.data.FileChunk;
-import de.hhu.bsinfo.dxgraphloader.loader.data.GraphObject;
+import de.hhu.bsinfo.dxgraphloader.loader.data.Graph;
 import de.hhu.bsinfo.dxgraphloader.loader.data.LongArray;
 import de.hhu.bsinfo.dxgraphloader.loader.formats.AbstractFileChunkCreator;
 import de.hhu.bsinfo.dxgraphloader.loader.formats.AbstractGraphFormatReader;
@@ -64,7 +64,7 @@ public final class GraphLoader {
 
     private final SupportedFormats m_formats = new SupportedFormats();
 
-    private GraphObject m_graph;
+    private Graph m_graph;
 
     /**
      * This method is used to set up the GraphLoader
@@ -73,7 +73,7 @@ public final class GraphLoader {
      * @param p_context
      *         all used Services of the current peer
      */
-    public GraphLoader(final GraphLoaderContext p_context) {
+    public GraphLoader(final PeerContext p_context) {
         m_boot = p_context.getBootService();
         m_chunk = p_context.getChunkService();
         m_job = p_context.getJobService();
@@ -93,7 +93,7 @@ public final class GraphLoader {
      * @return A Graph object
      */
     @SuppressWarnings("unused")
-    public GraphObject loadFormat(String p_format, String[] p_filePaths) {
+    public Graph loadFormat(String p_format, String[] p_filePaths) {
         return loadFormat(p_format, p_filePaths, 2);
     }
 
@@ -110,12 +110,12 @@ public final class GraphLoader {
      *         This amount can't exceed the value in the configuration of the JobComponent
      * @return A Graph object
      */
-    public GraphObject loadFormat(String p_format, String[] p_filenames, int p_workerCount) {
+    public Graph loadFormat(String p_format, String[] p_filenames, int p_workerCount) {
         //parse while reading excludes the reading peer!
         List<Short> peers = m_boot.getOnlinePeerNodeIDs();
 
         //the distribution graph object is a reference to all vertices created ion the peers which are store in maps
-        m_graph = new GraphObject(peers, m_chunk);
+        m_graph = new Graph(peers, m_chunk);
         m_chunk.create().create(m_boot.getNodeID(), m_graph);
         m_chunk.put().put(m_graph);
 
@@ -201,9 +201,9 @@ public final class GraphLoader {
             int p_workerCount, int p_cycle) {
 
         LOGGER.info("Pushing loader '%s' to '%s'!",
-                LoadChunkManagerJob.class.getSimpleName(), IDUtils.shortToHexString(p_peer));
+                PeerManagerJob.class.getSimpleName(), IDUtils.shortToHexString(p_peer));
 
-        AbstractJob abstractJob = m_job.createJobInstance(LoadChunkManagerJob.class.getCanonicalName(),
+        AbstractJob abstractJob = m_job.createJobInstance(PeerManagerJob.class.getCanonicalName(),
                 m_graph.getID(),
                 p_arrayID, p_formatReader.getCanonicalName(), p_workerCount, p_cycle);
 

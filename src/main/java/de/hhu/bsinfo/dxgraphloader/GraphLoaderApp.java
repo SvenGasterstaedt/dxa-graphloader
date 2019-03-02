@@ -24,7 +24,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import de.hhu.bsinfo.dxgraphloader.loader.GraphLoader;
-import de.hhu.bsinfo.dxgraphloader.loader.GraphLoaderContext;
+import de.hhu.bsinfo.dxgraphloader.loader.PeerContext;
 import de.hhu.bsinfo.dxram.app.AbstractApplication;
 import de.hhu.bsinfo.dxram.boot.BootService;
 import de.hhu.bsinfo.dxram.chunk.ChunkLocalService;
@@ -62,7 +62,7 @@ public class GraphLoaderApp extends AbstractApplication {
     @Override
     public void main(final String[] p_args) {
         final GraphLoader graphLoader = new GraphLoader(
-                new GraphLoaderContext(getService(BootService.class), getService(ChunkService.class), getService(
+                new PeerContext(getService(BootService.class), getService(ChunkService.class), getService(
                         ChunkLocalService.class), getService(JobService.class), getService(NameserviceService.class),
                         getService(SynchronizationService.class)));
 

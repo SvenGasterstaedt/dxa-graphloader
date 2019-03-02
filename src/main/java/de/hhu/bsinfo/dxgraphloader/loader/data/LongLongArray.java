@@ -14,66 +14,69 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-package de.hhu.bsinfo.dxgraphloader.graphobjects;
-
-import java.util.Arrays;
+package de.hhu.bsinfo.dxgraphloader.loader.data;
 
 import de.hhu.bsinfo.dxmem.data.AbstractChunk;
-import de.hhu.bsinfo.dxram.chunk.ChunkService;
 import de.hhu.bsinfo.dxutils.serialization.Exporter;
 import de.hhu.bsinfo.dxutils.serialization.Importer;
+import de.hhu.bsinfo.dxutils.serialization.ObjectSizeUtil;
 
-public class Vertex extends AbstractChunk {
+public final class LongLongArray extends AbstractChunk {
 
-    private long[] m_edges;
+    private long[][] m_chunks = new long[0][0];
 
-    @SuppressWarnings("WeakerAccess")
-    public Vertex(long p_id) {
-        m_edges = new long[1];
+    @SuppressWarnings("unused")
+    public LongLongArray() {
+    }
+
+    public LongLongArray(long p_id) {
         setID(p_id);
     }
 
-    public Vertex() {
-        m_edges = new long[1];
+    public LongLongArray(int p_size) {
+        m_chunks = new long[p_size][];
+        for (int i = 0; i < m_chunks.length; i++) {
+            m_chunks[i] = new long[0];
+        }
     }
 
-    @SuppressWarnings("WeakerAccess")
-    public Vertex(long p_id, int p_neighborCount) {
-        super(p_id);
-        m_edges = new long[p_neighborCount];
+    public void add(int p_index, long[] p_id) {
+        if (p_index >= 0 && p_index < m_chunks.length) {
+            m_chunks[p_index] = p_id;
+        }
     }
 
-    void addNeighbor(long p_edgeID) {
-        m_edges = Arrays.copyOf(m_edges, m_edges.length + 1);
-        m_edges[m_edges.length - 1] = p_edgeID;
-    }
-
-    void addNeighbors(long[] p_edgeIDs) {
-        m_edges = Arrays.copyOf(m_edges, m_edges.length + 1);
-        System.arraycopy(p_edgeIDs, 0, m_edges, m_edges.length, p_edgeIDs.length);
+    public long[] getArray(int p_pos) {
+        if (p_pos >= 0 && p_pos < m_chunks.length) {
+            return m_chunks[p_pos];
+        }
+        return null;
     }
 
     @Override
     public void exportObject(Exporter p_exporter) {
-        p_exporter.writeInt(m_edges.length);
-        for (long l : m_edges) {
-            p_exporter.writeLong(l);
+        p_exporter.writeInt(m_chunks.length);
+        for (long[] longArray : m_chunks) {
+            p_exporter.writeLongArray(longArray);
         }
     }
 
-    @SuppressWarnings("Duplicates")
     @Override
     public void importObject(Importer p_importer) {
         int size = 0;
         size = p_importer.readInt(size);
-        m_edges = new long[size];
+        m_chunks = new long[size][];
         for (int i = 0; i < size; i++) {
-            m_edges[i] = p_importer.readLong(m_edges[i]);
+            m_chunks[i] = p_importer.readLongArray(m_chunks[i]);
         }
     }
 
     @Override
     public int sizeofObject() {
-        return Integer.BYTES + Long.BYTES * m_edges.length;
+        int size = Integer.BYTES;
+        for (long[] longArray : m_chunks) {
+            size += ObjectSizeUtil.sizeofLongArray(longArray);
+        }
+        return size;
     }
 }

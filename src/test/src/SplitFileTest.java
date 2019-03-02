@@ -12,7 +12,7 @@ public class SplitFileTest {
         File file = new File("src/test/data/dataset1.txt");
         File result = new File("out.txt");
         FileOutputStream out_stream = new FileOutputStream(result);
-        SkippingLineFileChunkCreator skipper = new SkippingLineFileChunkCreator(file);
+        LineFileChunkCreator skipper = new LineFileChunkCreator(file);
         byte[] chunk;
         while (skipper.ready()) {
             chunk = skipper.getNextChunk();
