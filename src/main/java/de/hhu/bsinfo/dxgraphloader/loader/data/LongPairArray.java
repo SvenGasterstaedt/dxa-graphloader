@@ -7,8 +7,8 @@ import de.hhu.bsinfo.dxutils.serialization.ObjectSizeUtil;
 
 public class LongPairArray extends AbstractChunk {
 
-    private long[] m_keys;
-    private long[] m_ids;
+    private long[] m_keys =  new long[0];
+    private long[] m_ids = new long[0];
 
     public LongPairArray() {
     }

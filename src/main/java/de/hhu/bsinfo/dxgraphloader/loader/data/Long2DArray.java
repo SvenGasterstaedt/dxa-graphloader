@@ -47,10 +47,7 @@ public final class Long2DArray extends AbstractChunk {
     }
 
     public long[] getArray(int p_pos) {
-        if (p_pos >= 0 && p_pos < m_chunks.length) {
-            return m_chunks[p_pos];
-        }
-        return null;
+        return m_chunks[p_pos];
     }
 
     @Override

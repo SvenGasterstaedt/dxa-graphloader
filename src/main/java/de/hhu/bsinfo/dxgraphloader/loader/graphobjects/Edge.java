@@ -25,6 +25,7 @@ import de.hhu.bsinfo.dxutils.serialization.ObjectSizeUtil;
 public class Edge extends AbstractChunk {
 
     private long[] m_connect = new long[] {ChunkID.INVALID_ID, ChunkID.INVALID_ID};
+    int i = 0;
 
     public Edge() {
     }
@@ -46,8 +47,12 @@ public class Edge extends AbstractChunk {
         p_vrtx2.addNeighbor(getID());
     }
 
-    public long[] getVertices() {
-        return m_connect;
+    public void addConnection(long p_id) {
+        if(i>1){
+            return;
+        }
+        setConnection(i, p_id);
+        i++;
     }
 
     public void setConnection(int p_index, long p_vrtxID) {

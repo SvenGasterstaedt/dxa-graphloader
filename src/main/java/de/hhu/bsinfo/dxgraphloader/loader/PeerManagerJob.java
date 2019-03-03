@@ -29,6 +29,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -306,7 +307,9 @@ public final class PeerManagerJob extends AbstractJob {
         Set<Tuple> m_edges = Collections.newSetFromMap(new ConcurrentHashMap<Tuple, Boolean>());
         //synchronization tools
         int loadBarrier = Barrier.getBarrier(GraphLoader.LOAD_LOCK, p_context.getNameserviceService());
-        long totalEdgeCount = 0;
+        int load2Barrier = Barrier.getBarrier(GraphLoader.LOAD2_LOCK, p_context.getNameserviceService());
+
+        AtomicLong totalEdgeCount = new AtomicLong();
 
         //list to keep track of our jobs
         List<LoadChunkJob> jobList = new ArrayList<>();
@@ -358,7 +361,7 @@ public final class PeerManagerJob extends AbstractJob {
                 Vertex v2 = vertices.get(tuple.getY());
                 e.setEndPoint(v1, v2);
                 p_context.getChunkService().put().put(e);
-                totalEdgeCount++;
+                totalEdgeCount.getAndIncrement();
                 i.remove();
             }
         }
@@ -375,17 +378,17 @@ public final class PeerManagerJob extends AbstractJob {
             i.remove();
         }
 
-        //to prevent dmg from our list
-        HashMap<Tuple, Edge> edgesCopy = new HashMap<>(edges);
         //1)For every peer
         Long2DArray finder = new Long2DArray(keyCreator.getPeers().size());
         for (int i = 0; i < keyCreator.getPeers().size(); i++) {
             int size = 0;
             LOGGER.info("Keys for Peer: '%s'",
                     IDUtils.shortToHexString(p_context.getBootService().getOnlinePeerNodeIDs().get(i)));
-            long[] peerIDs = new long[m_edges.size() / 5324 + 2];
+            long[] peerIDs = new long[2 * (edges.size() / 5324) + 1];
             Arrays.fill(peerIDs, ChunkID.INVALID_ID);
             int pos = 0;
+            int arrayIndex = 0;
+
             long[] keys = new long[5324];
             long[] ids = new long[5324];
             Arrays.fill(keys, ChunkID.INVALID_ID);
@@ -393,18 +396,24 @@ public final class PeerManagerJob extends AbstractJob {
 
             //Ugly but does what it should - stores (VertexKey,EdgeID) "Tuple" in Chunks and send them onto remote
             // peer for resolving - no edges gets lost infact we get in total 2n entries for Edges.
-
             //2)go over the edges
-            for (Iterator<Map.Entry<Tuple, Edge>> iterator = edgesCopy.entrySet().iterator();
+            for (Iterator<Map.Entry<Tuple, Edge>> iterator = edges.entrySet().iterator();
                     iterator.hasNext(); ) {
-                int arrayIndex = 0;
                 Map.Entry<Tuple, Edge> entry = iterator.next();
-                boolean removable = true;
 
                 //3) and its keys
-                for (long key : entry.getKey().getKeys()) {
+                for (int k = 0; k < entry.getKey().getKeys().length; k++) {
+                    //check the peer where they belong
+                    if (KeyCreator.getPeer(entry.getKey().getKeys()[k]) == keyCreator.getPeers().get(i)) {
+                        //4) put them into an array
+                        keys[arrayIndex] = entry.getKey().getKeys()[k];
+                        ids[arrayIndex] = entry.getValue().getID();
+                        arrayIndex++;
+                        size++;
+                    }
+
                     //if array is full create pairArray or we reached the end of the edge list
-                    if (arrayIndex >= 5324 || !iterator.hasNext()) {
+                    if (arrayIndex >= 5324 || !iterator.hasNext() && k == entry.getKey().getKeys().length - 1) {
                         final LongPairArray pairArray = new LongPairArray(keys, ids);
                         while (pairArray.getID() == ChunkID.INVALID_ID) {
                             p_context.getChunkService().create().create(keyCreator.getPeers().get(i), pairArray);
@@ -416,30 +425,14 @@ public final class PeerManagerJob extends AbstractJob {
 
                         //put into finder structure
                         peerIDs[pos] = pairArray.getID();
-                        LOGGER.debug("Created %s!", Long.toHexString(pairArray.getID()));
                         pos++;
+
+                        LOGGER.debug("Created %s!", Long.toHexString(pairArray.getID()));
                         Arrays.fill(keys, ChunkID.INVALID_ID);
                         Arrays.fill(ids, ChunkID.INVALID_ID);
                         arrayIndex = 0;
-                        if (!iterator.hasNext()) {
-                            break;
-                        }
                     }
 
-                    //check the peer where they belong
-                    if (KeyCreator.getPeer(key) == keyCreator.getPeers().get(i)) {
-                        //4) put them into an array
-                        keys[arrayIndex] = key;
-                        ids[arrayIndex] = entry.getValue().getID();
-                        arrayIndex++;
-                        size++;
-                    } else {
-                        //if both keys belong to the same peer this edge is removeable from list - for acceleration
-                        removable = false;
-                    }
-                }
-                if (removable) {
-                    iterator.remove();
                 }
             }
             LOGGER.info("%s Key-Value-Pairs for Peer: '%s'", size,
@@ -450,12 +443,17 @@ public final class PeerManagerJob extends AbstractJob {
             p_context.getChunkService().create().create(p_context.getBootService().getNodeID(), finder);
             p_context.getChunkService().put().put(finder);
         }
-        edgesCopy.clear();
+
+        HashMap<Long, Edge> edgeID = new HashMap<>(edges.size());
+        for (Iterator<Map.Entry<Tuple, Edge>> iterator = edges.entrySet().iterator(); iterator.hasNext(); ) {
+            Edge e = iterator.next().getValue();
+            edgeID.put(e.getID(), e);
+            iterator.remove();
+        }
 
         LOGGER.info("Waiting for other peers ...");
         BarrierStatus status = p_context.getSynchronizationService().barrierSignOn(loadBarrier, finder.getID(),
                 true);
-        p_context.getSynchronizationService().barrierChangeSize(loadBarrier, keyCreator.getPeers().size() * 2);
 
         {
             LOGGER.info("Starting Key Resolving!");
@@ -477,29 +475,65 @@ public final class PeerManagerJob extends AbstractJob {
                     long[] keys = longPairArray.getKeys();
                     long[] ids = longPairArray.getIDs();
                     for (int j = 0; j < keys.length; j++) {
-                        if (ids[j] != ChunkID.INVALID_ID) {
-                            Vertex v = vertices.get(keys[i]);
-                            if (v != null) {
-                                v.addNeighbor(ids[i]);
-                                keys[i] = v.getID();
-                            }
+                        if (keys[j] != ChunkID.INVALID_ID || ids[j] != ChunkID.INVALID_ID) {
+                            Vertex v = vertices.get(keys[j]);
+                            v.addNeighbor(ids[j]);
+                            keys[j] = v.getID();
                         }
                     }
                     p_context.getChunkService().put().put(longPairArray);
                 }
             }
-            p_context.getChunkService().remove().remove(finder);
         }
+
         //now all vertices got all edges!
         LOGGER.info("Waiting for other peers ...");
-        status = p_context.getSynchronizationService().barrierSignOn(loadBarrier, finder.getID(),
+        status = p_context.getSynchronizationService().barrierSignOn(load2Barrier, finder.getID(),
                 true);
 
-        vertices.values().stream().forEach(
+        LOGGER.info("Putting Vertices!");
+        vertices.values().forEach(
                 v -> {
                     p_context.getChunkService().resize().resize(v);
                     p_context.getChunkService().put().put(v);
                 });
+
+        long localEdges = totalEdgeCount.get();
+        int peerEdges = 0;
+        LOGGER.debug("Inserting Vertices into Edges!");
+        for (int i = 0; i < keyCreator.getPeers().size(); i++) {
+            for (int j = 0; j < finder.getArray(i).length; j++) {
+                if (finder.getArray(i)[j] != ChunkID.INVALID_ID) {
+                    LongPairArray longPairArray = new LongPairArray(finder.getArray(i)[j]);
+                    boolean success;
+                    do {
+                        success = p_context.getChunkService().get().get(longPairArray);
+                    } while (!success);
+
+                    for (int k = 0; k < longPairArray.getKeys().length; k++) {
+                        if (longPairArray.getKeys()[k] != ChunkID.INVALID_ID) {
+                            Edge e = edgeID.get(longPairArray.getIDs()[k]);
+                            e.addConnection(longPairArray.getKeys()[k]);
+                            peerEdges++;
+                        }
+                    }
+                    //p_context.getChunkService().remove().remove(longPairArray);
+                }
+            }
+        }
+        LOGGER.info("Putting Shared Edges!");
+        peerEdges /= 2;
+        edgeID.values().forEach(
+                e -> {
+                    p_context.getChunkService().put().put(e);
+                    totalEdgeCount.getAndIncrement();
+                });
+
+        LOGGER.info("Peer Stats for [%s]", IDUtils.shortToHexString(p_context.getBootService().getNodeID()));
+        LOGGER.info("Vertices on this peer:\t%s", vertices.size());
+        LOGGER.info("Exclusiv Edges:\t\t%s", localEdges);
+        LOGGER.info("Shared Edges:\t\t%s", peerEdges);
+        LOGGER.info("Total Edges:\t\t\t%s", totalEdges);
     }
 
     private static boolean areAllJobsFinished(List<LoadChunkJob> p_job) {

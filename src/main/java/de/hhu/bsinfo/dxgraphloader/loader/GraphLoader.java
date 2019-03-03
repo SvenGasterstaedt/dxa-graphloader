@@ -55,6 +55,9 @@ public final class GraphLoader {
 
     static final String LOAD_LOCK = "GRL2";
 
+    static final String LOAD2_LOCK = "GRL3";
+
+
     private static final Logger LOGGER = LogManager.getFormatterLogger(GraphLoaderApp.class.getSimpleName());
     private final BootService m_boot;
     private final JobService m_job;
@@ -174,6 +177,8 @@ public final class GraphLoader {
                 //push chunk ids to peers
                 int cycleBarrier = Barrier.createBarrier(CYCLE_LOCK, peers.size(), m_sync, m_name);
                 int loadBarrier = Barrier.createBarrier(LOAD_LOCK, peers.size(), m_sync, m_name);
+                int load2Barrier = Barrier.createBarrier(LOAD2_LOCK, peers.size(), m_sync, m_name);
+
 
                 {
                     LongArray[] longArray = new LongArray[peers.size()];
@@ -188,6 +193,7 @@ public final class GraphLoader {
                 m_job.waitForLocalJobsToFinish();
                 m_sync.barrierFree(cycleBarrier);
                 m_sync.barrierFree(loadBarrier);
+                m_sync.barrierFree(load2Barrier);
             }
         }
         return m_graph;
