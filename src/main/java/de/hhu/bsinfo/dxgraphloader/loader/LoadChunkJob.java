@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 
@@ -46,11 +45,8 @@ public final class LoadChunkJob extends AbstractJob {
     private static final Logger LOGGER = LogManager.getFormatterLogger(GraphLoaderApp.class.getSimpleName());
     private static final Class[] CLASSES = new Class[] {
             Graph.class,
-            ConcurrentHashMap.class,
-            ConcurrentHashMap.class,
             ArrayList.class,
-            ChunkLocalService.class,
-            BootService.class};
+            Set.class};
 
     private Queue<Long> m_queue;
     private String m_classpath;
@@ -60,18 +56,15 @@ public final class LoadChunkJob extends AbstractJob {
     private PeerContext m_context;
     private Lock m_lock;
 
-    private ConcurrentHashMap<Long, Long> m_localKeys;
-    private ConcurrentHashMap<Tuple<Long, Long>, Long> m_remoteEdge;
-    private ArrayList<Set<Long>> m_remoteKeys;
+    private Set<Tuple> m_edges;
+    private ArrayList<Set<Long>> m_vertices;
 
     private boolean m_finished;
 
     public LoadChunkJob(final Queue<Long> p_queue, final String p_classpath, final Lock p_lock,
-            final Graph p_graph,
-            final ConcurrentHashMap<Long, Long> p_localKeys, final ArrayList<Set<Long>> p_remoteVertices, int p_cycle) {
+            final Graph p_graph, final ArrayList<Set<Long>> p_vertices, int p_cycle) {
         m_graph = p_graph;
-        m_remoteKeys = p_remoteVertices;
-        m_localKeys = p_localKeys;
+        m_vertices = p_vertices;
         m_classpath = p_classpath;
         m_queue = p_queue;
         m_lock = p_lock;
@@ -79,9 +72,9 @@ public final class LoadChunkJob extends AbstractJob {
     }
 
     public LoadChunkJob(final Queue<Long> p_queue, final String p_classpath, final Lock p_lock,
-            final Graph p_graph, final ConcurrentHashMap<Tuple<Long, Long>, Long> p_remoteEdge, int p_cycle) {
+            final Graph p_graph, final Set<Tuple> p_edges, int p_cycle) {
         m_graph = p_graph;
-        m_remoteEdge = p_remoteEdge;
+        m_edges = p_edges;
         m_classpath = p_classpath;
         m_queue = p_queue;
         m_lock = p_lock;
@@ -131,18 +124,14 @@ public final class LoadChunkJob extends AbstractJob {
                             graphFormatReader = (AbstractGraphFormatReader) Class.forName(
                                     m_classpath)
                                     .getConstructor(CLASSES)
-                                    .newInstance(m_graph, m_localKeys, m_remoteEdge, m_remoteKeys,
-                                            m_context.getChunkLocalService(),
-                                            m_context.getBootService());
+                                    .newInstance(m_graph, m_vertices, m_edges);
                             graphFormatReader.readVertices(fileChunk.getContents());
                             break;
                         case 1:
                             graphFormatReader = (AbstractGraphFormatReader) Class.forName(
                                     m_classpath)
                                     .getConstructor(CLASSES)
-                                    .newInstance(m_graph, m_localKeys, m_remoteEdge, m_remoteKeys,
-                                            m_context.getChunkLocalService(),
-                                            m_context.getBootService());
+                                    .newInstance(m_graph, m_vertices, m_edges);
                             graphFormatReader.readEdges(fileChunk.getContents());
                             break;
                         default:
@@ -156,7 +145,6 @@ public final class LoadChunkJob extends AbstractJob {
                     e.printStackTrace();
                     break;
                 }
-
                 m_context.getChunkService().remove().remove(fileChunk);
             }
         }

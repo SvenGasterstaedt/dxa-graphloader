@@ -14,7 +14,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-package de.hhu.bsinfo.dxgraphloader.graphobjects;
+package de.hhu.bsinfo.dxgraphloader.loader.graphobjects;
 
 import de.hhu.bsinfo.dxmem.data.AbstractChunk;
 import de.hhu.bsinfo.dxmem.data.ChunkID;
@@ -24,7 +24,7 @@ import de.hhu.bsinfo.dxutils.serialization.ObjectSizeUtil;
 
 public class Edge extends AbstractChunk {
 
-    long[] m_connect = new long[] {ChunkID.INVALID_ID, ChunkID.INVALID_ID};
+    private long[] m_connect = new long[] {ChunkID.INVALID_ID, ChunkID.INVALID_ID};
 
     public Edge() {
     }

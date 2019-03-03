@@ -16,8 +16,8 @@
 
 package de.hhu.bsinfo.dxgraphloader.loader.data;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import de.hhu.bsinfo.dxmem.data.AbstractChunk;
 import de.hhu.bsinfo.dxmem.data.ChunkID;
@@ -26,22 +26,20 @@ import de.hhu.bsinfo.dxutils.serialization.Importer;
 
 public final class PeerVertexMap extends AbstractChunk {
 
-    private final ConcurrentHashMap<Long, Long> m_map;
+    private final HashMap<Long, Long> m_map = new HashMap<>();
 
     public PeerVertexMap() {
-        m_map = new ConcurrentHashMap<>();
-    }
-
-    public PeerVertexMap(final ConcurrentHashMap<Long, Long> p_map) {
-        m_map = p_map;
     }
 
     public PeerVertexMap(long p_id) {
-        m_map = new ConcurrentHashMap<>();
         setID(p_id);
     }
 
-    public ConcurrentHashMap<Long, Long> getMap() {
+    public PeerVertexMap(final HashMap<Long, Long> p_map) {
+        m_map.putAll(p_map);
+    }
+
+    public HashMap<Long, Long> getMap() {
         return m_map;
     }
 

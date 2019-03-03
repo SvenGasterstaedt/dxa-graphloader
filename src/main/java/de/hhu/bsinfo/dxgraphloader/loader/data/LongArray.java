@@ -32,6 +32,10 @@ public final class LongArray extends AbstractChunk {
         setID(p_chunkId);
     }
 
+    public LongArray() {
+        super();
+    }
+
     @SuppressWarnings("unused")
     public LongArray(final long[] p_ids) {
         m_ids = p_ids;

@@ -31,6 +31,9 @@ public final class Graph extends AbstractChunk {
     private HashMap<Short, Long> m_listPeerMaps = new HashMap<>();
     private KeyCreator m_keyCreator = new KeyCreator();
 
+    public Graph(){
+    }
+
     public Graph(long p_id) {
         setID(p_id);
     }

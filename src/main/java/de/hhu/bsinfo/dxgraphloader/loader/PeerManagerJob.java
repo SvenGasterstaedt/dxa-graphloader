@@ -19,9 +19,11 @@ package de.hhu.bsinfo.dxgraphloader.loader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
@@ -35,12 +37,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import de.hhu.bsinfo.dxgraphloader.GraphLoaderApp;
-import de.hhu.bsinfo.dxgraphloader.graphobjects.Vertex;
 import de.hhu.bsinfo.dxgraphloader.loader.data.Graph;
 import de.hhu.bsinfo.dxgraphloader.loader.data.KeyArray;
+import de.hhu.bsinfo.dxgraphloader.loader.data.Long2DArray;
 import de.hhu.bsinfo.dxgraphloader.loader.data.LongArray;
-import de.hhu.bsinfo.dxgraphloader.loader.data.LongLongArray;
+import de.hhu.bsinfo.dxgraphloader.loader.data.LongPairArray;
 import de.hhu.bsinfo.dxgraphloader.loader.data.PeerVertexMap;
+import de.hhu.bsinfo.dxgraphloader.loader.graphobjects.Edge;
+import de.hhu.bsinfo.dxgraphloader.loader.graphobjects.Vertex;
 import de.hhu.bsinfo.dxgraphloader.util.Barrier;
 import de.hhu.bsinfo.dxgraphloader.util.IDUtils;
 import de.hhu.bsinfo.dxgraphloader.util.Tuple;
@@ -60,19 +64,16 @@ import de.hhu.bsinfo.dxutils.serialization.ObjectSizeUtil;
 /**
  * Main Job Class for the GraphLoader. Manges Jobs/Synchronization and much more.
  */
+@SuppressWarnings("Duplicates")
 public final class PeerManagerJob extends AbstractJob {
     private static final Logger LOGGER = LogManager.getFormatterLogger(GraphLoaderApp.class.getSimpleName());
 
     private int m_workerCount;
     private int m_cycle;
 
-    private long m_arrayID;
     private long m_graph;
-
+    private LongArray m_longArray = new LongArray();
     private String m_classpath;
-
-    private ConcurrentHashMap<Long, Long> m_vertexMap = new ConcurrentHashMap<Long, Long>();
-    private ConcurrentHashMap<Tuple<Long,Long>, Long> m_edges = new ConcurrentHashMap<Tuple<Long,Long>, Long>();
 
     /**
      * Needed for im- and exporting, to set the ID.
@@ -95,9 +96,9 @@ public final class PeerManagerJob extends AbstractJob {
      * @param p_cycle
      *         the cycle we are in (Vertex/Edge cycle)
      */
-    public PeerManagerJob(final long p_graphID, final long p_longArray,
+    public PeerManagerJob(final long p_graphID, final LongArray p_longArray,
             final String p_graphLoader, final int p_workerCount, int p_cycle) {
-        m_arrayID = p_longArray;
+        m_longArray = p_longArray;
         m_classpath = p_graphLoader;
         m_graph = p_graphID;
         m_workerCount = p_workerCount;
@@ -121,20 +122,16 @@ public final class PeerManagerJob extends AbstractJob {
                 getService(NameserviceService.class),
                 getService(SynchronizationService.class));
 
-        //Array with ID of Chunks of the File
-        LongArray longArray = new LongArray(m_arrayID);
-        context.getChunkLocalService().getLocal().get(longArray);
-
         //Main Graph Object
         Graph graph = new Graph(m_graph);
         context.getChunkService().get().get(graph);
 
         //Queue with Chunks of the File
         Queue<Long> chunkList = Arrays.stream(
-                longArray.getIds())
+                m_longArray.getIds())
                 .boxed()
                 .collect(Collectors.toCollection(ConcurrentLinkedQueue::new));
-        context.getChunkService().remove().remove(longArray);
+        context.getChunkService().remove().remove(m_longArray);
 
         //Barrier to indicate end of job
         int cycleBarrier = Barrier.getBarrier(GraphLoader.CYCLE_LOCK, context.getNameserviceService());
@@ -169,9 +166,15 @@ public final class PeerManagerJob extends AbstractJob {
      *         graph object
      */
     private void loadVertices(PeerContext p_context, Queue<Long> p_chunkList, Graph p_graph) {
-
         //list to keep track of our jobs
         List<LoadChunkJob> jobList = new ArrayList<>();
+
+        //List of Sets for keys, which will be distributed. For Threadsafty this is based on a ConcurrentHashMap
+        Set<Long> vertices = Collections.newSetFromMap(new ConcurrentHashMap<Long, Boolean>());
+        ArrayList<Set<Long>> remoteKeySet = new ArrayList<>();
+        for (int j = 0; j < p_context.getBootService().getOnlinePeerNodeIDs().size(); j++) {
+            remoteKeySet.add(Collections.newSetFromMap(new ConcurrentHashMap<Long, Boolean>()));
+        }
 
         //synchronization tools
         int loadBarrier = Barrier.getBarrier(GraphLoader.LOAD_LOCK, p_context.getNameserviceService());
@@ -179,24 +182,14 @@ public final class PeerManagerJob extends AbstractJob {
 
         LOGGER.info("Extracting and Creating Local Vertices!");
 
-        //List of Sets for keys, which will be distributed. For Threadsafty this is based on a ConcurrentHashMap
-        ArrayList<Set<Long>> remoteKeySet = new ArrayList<>();
-        for (int j = 0; j < p_context.getBootService().getOnlinePeerNodeIDs().size(); j++) {
-            remoteKeySet.add(Collections.newSetFromMap(new ConcurrentHashMap<Long, Boolean>()));
-        }
-
         //starting jobs
         for (int i = 0; i < m_workerCount - 1; i++) {
-
-            LoadChunkJob abstractJob = new LoadChunkJob(p_chunkList, m_classpath, lock, p_graph,
-                    m_vertexMap, remoteKeySet, m_cycle);
+            LoadChunkJob abstractJob = new LoadChunkJob(p_chunkList, m_classpath, lock, p_graph, remoteKeySet, m_cycle);
             jobList.add(abstractJob);
             p_context.getJobService().pushJob(abstractJob);
         }
-
         //this job is finish and just joins the other jobs and helps loading
-        LoadChunkJob localJob = new LoadChunkJob(p_chunkList, m_classpath, lock, p_graph,
-                m_vertexMap, remoteKeySet, m_cycle);
+        LoadChunkJob localJob = new LoadChunkJob(p_chunkList, m_classpath, lock, p_graph, remoteKeySet, m_cycle);
         localJob.setServicesForLocal(p_context);
         jobList.add(localJob);
         localJob.execute();
@@ -204,10 +197,11 @@ public final class PeerManagerJob extends AbstractJob {
         waitForJobsToFinish(jobList);
 
         LOGGER.info("Storing Remote Keys!");
-        LongLongArray finder = new LongLongArray(p_context.getBootService().getOnlinePeerNodeIDs().size());
+        Long2DArray finder = new Long2DArray(p_context.getBootService().getOnlinePeerNodeIDs().size());
 
         for (int i = 0; i < p_context.getBootService().getOnlinePeerNodeIDs().size(); i++) {
             if (p_context.getBootService().getOnlinePeerNodeIDs().get(i) == p_context.getBootService().getNodeID()) {
+                vertices.addAll(remoteKeySet.get(i));
                 continue;
             }
 
@@ -261,11 +255,11 @@ public final class PeerManagerJob extends AbstractJob {
 
         LOGGER.info("Starting Synchronization!");
         long[] finderIDs = status.getCustomData();
-        LongLongArray[] finders = new LongLongArray[finderIDs.length];
+        Long2DArray[] finders = new Long2DArray[finderIDs.length];
 
         for (int i = 0; i < finderIDs.length; i++) {
 
-            finders[i] = new LongLongArray(finderIDs[i]);
+            finders[i] = new Long2DArray(finderIDs[i]);
             p_context.getChunkService().get().get(finders);
 
             for (long l : Objects.requireNonNull(
@@ -275,39 +269,27 @@ public final class PeerManagerJob extends AbstractJob {
 
                     continue;
                 }
-
                 LOGGER.debug("Stored '%s'", Long.toHexString(l));
                 KeyArray keyArray = new KeyArray(l);
                 p_context.getChunkService().get().get(keyArray);
-
-                for (Long aLong : keyArray.getKeys()) {
-
-                    Long value = m_vertexMap.putIfAbsent(aLong, ChunkID.INVALID_ID);
-
-                    if (value == null) {
-
-                        Vertex v = new Vertex();
-                        p_context.getChunkLocalService().createLocal().create(v);
-                        m_vertexMap.replace(aLong, v.getID());
-                    }
-                }
+                Arrays.stream(keyArray.getKeys()).forEach(vertices::add);
                 p_context.getChunkService().remove().remove(keyArray);
             }
         }
         p_context.getChunkService().remove().remove(finder);
 
-        m_vertexMap.values().forEach(value -> p_context.getChunkService().put().put(new Vertex()));
-
-        PeerVertexMap vertexMap = new PeerVertexMap(m_vertexMap);
+        //store vertices in map - for reference
+        HashMap<Long, Long> map = new HashMap<>(vertices.size());
+        vertices.forEach(key -> map.put(key, ChunkID.INVALID_ID));
+        PeerVertexMap vertexMap = new PeerVertexMap(map);
         vertexMap.setID(p_graph.getMap(p_context.getBootService().getNodeID()));
-        p_context.getChunkLocalService().createLocal().create(vertexMap);
+        p_context.getChunkService().resize().resize(vertexMap);
         p_context.getChunkService().put().put(vertexMap);
 
-        LOGGER.info("'%s' holds '%s' Vertices",
+        LOGGER.info("'%s' holds '%s' Vertices keys",
                 IDUtils.shortToHexString(p_context.getBootService().getNodeID()),
-                m_vertexMap.values().size());
+                vertices.size());
     }
-
 
     /**
      * This Function loads Edges from chunks and synchronizes them between peers.
@@ -321,22 +303,22 @@ public final class PeerManagerJob extends AbstractJob {
      *         graph object
      */
     private void loadEdges(PeerContext p_context, Queue<Long> p_chunkList, Graph p_graph) {
+        Set<Tuple> m_edges = Collections.newSetFromMap(new ConcurrentHashMap<Tuple, Boolean>());
         //synchronization tools
         int loadBarrier = Barrier.getBarrier(GraphLoader.LOAD_LOCK, p_context.getNameserviceService());
+        long totalEdgeCount = 0;
 
         //list to keep track of our jobs
         List<LoadChunkJob> jobList = new ArrayList<>();
         Lock lock = new ReentrantLock(true);
 
-        LOGGER.info("Extracting and Creating Local Edges!");
-
+        LOGGER.info("Loading Edges!");
         //starting jobs
         for (int i = 0; i < m_workerCount - 1; i++) {
             LoadChunkJob abstractJob = new LoadChunkJob(p_chunkList, m_classpath, lock, p_graph, m_edges, m_cycle);
             jobList.add(abstractJob);
             p_context.getJobService().pushJob(abstractJob);
         }
-
         //this job is finish and just joins the other jobs and helps loading
         LoadChunkJob localJob = new LoadChunkJob(p_chunkList, m_classpath, lock, p_graph, m_edges, m_cycle);
         localJob.setServicesForLocal(p_context);
@@ -345,64 +327,179 @@ public final class PeerManagerJob extends AbstractJob {
 
         waitForJobsToFinish(jobList);
 
-        LOGGER.info("%s !", m_edges.size());
+        LOGGER.info("%s Edges on this peer!", m_edges.size());
+        //local peer vertex map
+        PeerVertexMap vertexMap = new PeerVertexMap();
+        vertexMap.setID(p_graph.getMap(p_context.getBootService().getNodeID()));
+        p_context.getChunkLocalService().getLocal().get(vertexMap);
+        Map<Long, Long> map = vertexMap.getMap();
 
-        /*
-        LongLongArray finder = new LongLongArray(p_context.getBootService().getOnlinePeerNodeIDs().size());
-        for (int i = 0; i < p_context.getBootService().getOnlinePeerNodeIDs().size(); i++) {
-            if (p_context.getBootService().getOnlinePeerNodeIDs().get(i) == p_context.getBootService().getNodeID()) {
-                continue;
+        //key service
+        KeyCreator keyCreator = p_graph.getKeyCreator();
+
+        //remote map
+        HashMap<Long, Vertex> vertices = new HashMap<>(map.size());
+        for (Iterator<Map.Entry<Long, Long>> i = map.entrySet().iterator(); i.hasNext(); ) {
+            Vertex v = new Vertex();
+            vertices.put(i.next().getKey(), v);
+            p_context.getChunkLocalService().createLocal().create(v);
+            i.remove();
+        }
+
+        int totalEdges = m_edges.size();
+
+        for (Iterator<Tuple> i = m_edges.iterator(); i.hasNext(); ) {
+            Tuple tuple = i.next();
+            if (KeyCreator.getPeer(tuple.getX()) == KeyCreator.getPeer(tuple.getY()) &&
+                    KeyCreator.getPeer(tuple.getX()) == p_context.getBootService().getNodeID()) {
+                Edge e = new Edge();
+                p_context.getChunkLocalService().createLocal().create(e);
+                Vertex v1 = vertices.get(tuple.getX());
+                Vertex v2 = vertices.get(tuple.getY());
+                e.setEndPoint(v1, v2);
+                p_context.getChunkService().put().put(e);
+                totalEdgeCount++;
+                i.remove();
             }
+        }
 
-            Set<Long> set = edgeMap.get(i);
-            long[] ids = new long[set.size() / 5324];
-            Arrays.fill(ids, ChunkID.INVALID_ID);
+        LOGGER.info("Created '%s' local Edges on '%s'", totalEdges - m_edges.size(),
+                IDUtils.shortToHexString(p_context.getBootService().getNodeID()));
+
+        //Create Edges, so we can send ids - to vertices
+        HashMap<Tuple, Edge> edges = new HashMap<>(m_edges.size());
+        for (Iterator<Tuple> i = m_edges.iterator(); i.hasNext(); ) {
+            Edge e = new Edge();
+            p_context.getChunkLocalService().createLocal().create(e);
+            edges.put(i.next(), e);
+            i.remove();
+        }
+
+        //to prevent dmg from our list
+        HashMap<Tuple, Edge> edgesCopy = new HashMap<>(edges);
+        //1)For every peer
+        Long2DArray finder = new Long2DArray(keyCreator.getPeers().size());
+        for (int i = 0; i < keyCreator.getPeers().size(); i++) {
+            int size = 0;
             LOGGER.info("Keys for Peer: '%s'",
                     IDUtils.shortToHexString(p_context.getBootService().getOnlinePeerNodeIDs().get(i)));
+            long[] peerIDs = new long[m_edges.size() / 5324 + 2];
+            Arrays.fill(peerIDs, ChunkID.INVALID_ID);
             int pos = 0;
-            HashSet<Long> smallSet = new HashSet<>();
-            Iterator<Long> iterator = set.iterator();
+            long[] keys = new long[5324];
+            long[] ids = new long[5324];
+            Arrays.fill(keys, ChunkID.INVALID_ID);
+            Arrays.fill(ids, ChunkID.INVALID_ID);
 
-            while (iterator.hasNext()) {
+            //Ugly but does what it should - stores (VertexKey,EdgeID) "Tuple" in Chunks and send them onto remote
+            // peer for resolving - no edges gets lost infact we get in total 2n entries for Edges.
 
-                smallSet.add(iterator.next());
+            //2)go over the edges
+            for (Iterator<Map.Entry<Tuple, Edge>> iterator = edgesCopy.entrySet().iterator();
+                    iterator.hasNext(); ) {
+                int arrayIndex = 0;
+                Map.Entry<Tuple, Edge> entry = iterator.next();
+                boolean removable = true;
 
-                if (smallSet.size() > 5324 * 32 || !iterator.hasNext()) {
+                //3) and its keys
+                for (long key : entry.getKey().getKeys()) {
+                    //if array is full create pairArray or we reached the end of the edge list
+                    if (arrayIndex >= 5324 || !iterator.hasNext()) {
+                        final LongPairArray pairArray = new LongPairArray(keys, ids);
+                        while (pairArray.getID() == ChunkID.INVALID_ID) {
+                            p_context.getChunkService().create().create(keyCreator.getPeers().get(i), pairArray);
+                        }
+                        boolean status;
+                        do {
+                            status = p_context.getChunkService().put().put(pairArray);
+                        } while (!status);
 
-                    final KeyArray keyArray = new KeyArray(smallSet);
-
-                    while (keyArray.getID() == ChunkID.INVALID_ID) {
-                        p_context.getChunkService().create().create(
-                                p_context.getBootService().getOnlinePeerNodeIDs().get(i), keyArray);
+                        //put into finder structure
+                        peerIDs[pos] = pairArray.getID();
+                        LOGGER.debug("Created %s!", Long.toHexString(pairArray.getID()));
+                        pos++;
+                        Arrays.fill(keys, ChunkID.INVALID_ID);
+                        Arrays.fill(ids, ChunkID.INVALID_ID);
+                        arrayIndex = 0;
+                        if (!iterator.hasNext()) {
+                            break;
+                        }
                     }
 
-                    boolean status;
-
-                    do {
-                        status = p_context.getChunkService().put().put(keyArray);
-                    } while (!status);
-
-                    LOGGER.debug("Created %s!", Long.toHexString(keyArray.getID()));
-                    ids[pos] = keyArray.getID();
-                    pos++;
-                    smallSet = new HashSet<>();
+                    //check the peer where they belong
+                    if (KeyCreator.getPeer(key) == keyCreator.getPeers().get(i)) {
+                        //4) put them into an array
+                        keys[arrayIndex] = key;
+                        ids[arrayIndex] = entry.getValue().getID();
+                        arrayIndex++;
+                        size++;
+                    } else {
+                        //if both keys belong to the same peer this edge is removeable from list - for acceleration
+                        removable = false;
+                    }
+                }
+                if (removable) {
+                    iterator.remove();
                 }
             }
-
-            finder.add(i, ids);
+            LOGGER.info("%s Key-Value-Pairs for Peer: '%s'", size,
+                    IDUtils.shortToHexString(p_context.getBootService().getOnlinePeerNodeIDs().get(i)));
+            finder.add(i, peerIDs);
         }
-
         while (finder.getID() == ChunkID.INVALID_ID) {
-
             p_context.getChunkService().create().create(p_context.getBootService().getNodeID(), finder);
             p_context.getChunkService().put().put(finder);
-
         }
+        edgesCopy.clear();
 
         LOGGER.info("Waiting for other peers ...");
-        BarrierStatus status = p_context.getSynchronizationService()
-                .barrierSignOn(loadBarrier, finder.getID(), true);
-                */
+        BarrierStatus status = p_context.getSynchronizationService().barrierSignOn(loadBarrier, finder.getID(),
+                true);
+        p_context.getSynchronizationService().barrierChangeSize(loadBarrier, keyCreator.getPeers().size() * 2);
+
+        {
+            LOGGER.info("Starting Key Resolving!");
+            long[] finderIDs = status.getCustomData();
+            Long2DArray[] finders = new Long2DArray[finderIDs.length];
+            for (int i = 0; i < finderIDs.length; i++) {
+
+                finders[i] = new Long2DArray(finderIDs[i]);
+                p_context.getChunkService().get().get(finders);
+                for (long l : Objects.requireNonNull(
+                        finders[i].getArray(p_graph.getKeyCreator()
+                                .getPeerIndex(p_context.getBootService().getNodeID())))) {
+                    if (l == ChunkID.INVALID_ID) {
+                        continue;
+                    }
+                    LOGGER.debug("Resolving '%s'", Long.toHexString(l));
+                    LongPairArray longPairArray = new LongPairArray(l);
+                    p_context.getChunkService().get().get(longPairArray);
+                    long[] keys = longPairArray.getKeys();
+                    long[] ids = longPairArray.getIDs();
+                    for (int j = 0; j < keys.length; j++) {
+                        if (ids[j] != ChunkID.INVALID_ID) {
+                            Vertex v = vertices.get(keys[i]);
+                            if (v != null) {
+                                v.addNeighbor(ids[i]);
+                                keys[i] = v.getID();
+                            }
+                        }
+                    }
+                    p_context.getChunkService().put().put(longPairArray);
+                }
+            }
+            p_context.getChunkService().remove().remove(finder);
+        }
+        //now all vertices got all edges!
+        LOGGER.info("Waiting for other peers ...");
+        status = p_context.getSynchronizationService().barrierSignOn(loadBarrier, finder.getID(),
+                true);
+
+        vertices.values().stream().forEach(
+                v -> {
+                    p_context.getChunkService().resize().resize(v);
+                    p_context.getChunkService().put().put(v);
+                });
     }
 
     private static boolean areAllJobsFinished(List<LoadChunkJob> p_job) {
@@ -432,7 +529,7 @@ public final class PeerManagerJob extends AbstractJob {
     public void importObject(final Importer p_importer) {
 
         super.importObject(p_importer);
-        m_arrayID = p_importer.readLong(m_arrayID);
+        p_importer.importObject(m_longArray);
         m_classpath = p_importer.readString(m_classpath);
         m_workerCount = p_importer.readInt(m_workerCount);
         m_graph = p_importer.readLong(m_graph);
@@ -444,7 +541,7 @@ public final class PeerManagerJob extends AbstractJob {
     public void exportObject(final Exporter p_exporter) {
 
         super.exportObject(p_exporter);
-        p_exporter.writeLong(m_arrayID);
+        p_exporter.exportObject(m_longArray);
         p_exporter.writeString(m_classpath);
         p_exporter.writeInt(m_workerCount);
         p_exporter.writeLong(m_graph);
@@ -455,8 +552,8 @@ public final class PeerManagerJob extends AbstractJob {
     @Override
     public int sizeofObject() {
 
-        return super.sizeofObject() + Long.BYTES + ObjectSizeUtil.sizeofString(m_classpath) + Integer.BYTES +
-                Long.BYTES + Integer.BYTES;
+        return super.sizeofObject() + ObjectSizeUtil.sizeofString(m_classpath) + Integer.BYTES +
+                Long.BYTES + Integer.BYTES + m_longArray.sizeofObject();
 
     }
 }

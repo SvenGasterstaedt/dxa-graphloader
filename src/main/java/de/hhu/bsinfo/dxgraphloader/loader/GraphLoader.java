@@ -180,11 +180,8 @@ public final class GraphLoader {
                     for (int i = 0; i < peers.size(); i++) {
 
                         longArray[i] = new LongArray(peerChunkList.get(i).toArray(new Long[0]));
-                        m_chunk.create().create(peers.get(i), longArray[i]);
-                        m_chunk.put().put(longArray[i]);
-
                         //start jobs (local and remote)
-                        startJobsOnRemote(peers.get(i), longArray[i].getID(), graphFormat.getGraphFormatReader(),
+                        startJobsOnRemote(peers.get(i), longArray[i], graphFormat.getGraphFormatReader(),
                                 p_workerCount, cycleCount);
                     }
                 }
@@ -196,7 +193,7 @@ public final class GraphLoader {
         return m_graph;
     }
 
-    private void startJobsOnRemote(short p_peer, long p_arrayID,
+    private void startJobsOnRemote(short p_peer, LongArray p_longArray,
             Class<? extends AbstractGraphFormatReader> p_formatReader,
             int p_workerCount, int p_cycle) {
 
@@ -205,7 +202,7 @@ public final class GraphLoader {
 
         AbstractJob abstractJob = m_job.createJobInstance(PeerManagerJob.class.getCanonicalName(),
                 m_graph.getID(),
-                p_arrayID, p_formatReader.getCanonicalName(), p_workerCount, p_cycle);
+                p_longArray, p_formatReader.getCanonicalName(), p_workerCount, p_cycle);
 
         if (m_boot.getNodeID() != p_peer) {
             m_job.pushJobRemote(abstractJob, p_peer);

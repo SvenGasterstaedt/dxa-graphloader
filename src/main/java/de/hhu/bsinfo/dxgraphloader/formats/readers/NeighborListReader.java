@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import de.hhu.bsinfo.dxgraphloader.graphobjects.Vertex;
+import de.hhu.bsinfo.dxgraphloader.loader.graphobjects.Vertex;
 import de.hhu.bsinfo.dxgraphloader.loader.data.Graph;
 import de.hhu.bsinfo.dxgraphloader.loader.formats.AbstractGraphFormatReader;
 import de.hhu.bsinfo.dxgraphloader.util.Tuple;
@@ -43,11 +43,9 @@ import de.hhu.bsinfo.dxram.chunk.ChunkLocalService;
 
 public final class NeighborListReader extends AbstractGraphFormatReader {
 
-    public NeighborListReader(Graph p_graph,
-            ConcurrentHashMap<Long, Long> p_vertexMap,
-            ConcurrentHashMap<Tuple<Long, Long>, Long> p_edges,
-            ArrayList<Set<Long>> p_remoteKeys, ChunkLocalService p_chunkLocal, BootService p_boot) {
-        super(p_graph, p_vertexMap, p_edges, p_remoteKeys, p_chunkLocal, p_boot);
+    public NeighborListReader(Graph p_graph, ArrayList<Set<Long>> p_vertices,
+            Set<Tuple> p_edges) {
+        super(p_graph, p_vertices, p_edges);
     }
 
     @Override
@@ -65,9 +63,9 @@ public final class NeighborListReader extends AbstractGraphFormatReader {
                 }
                 String[] key = line.split("\t");
                 String key1 = Long.toString(lineNumber);
-                createVertex(key1, Vertex.class);
+                storeVertexKey(key1, Vertex.class);
                 for (int i = 0; i < key.length; i++) {
-                    createVertex(key[i], Vertex.class);
+                    storeVertexKey(key[i], Vertex.class);
                 }
                 lineNumber++;
             }

@@ -16,35 +16,23 @@
 
 package de.hhu.bsinfo.dxgraphloader.util;
 
-import java.util.Objects;
+public class Tuple {
+    private final long x;
+    private final long y;
 
-public class Tuple<X,Y> {
-    private final X x;
-    private final Y y;
-    public Tuple(X x,Y y){
+    public Tuple(long x, long y) {
         this.x = x;
         this.y = y;
     }
 
-    public X getX() {
+    public long getX() {
         return x;
     }
 
-    public Y getY(){
-        return y;
+    public long getY() { return y;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Tuple<?, ?> tuple = (Tuple<?, ?>) o;
-        return Objects.equals(x, tuple.x) &&
-                Objects.equals(y, tuple.y);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(x, y);
+    public long[] getKeys() {
+        return new long[] {x, y};
     }
 }

@@ -21,13 +21,10 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import de.hhu.bsinfo.dxgraphloader.loader.data.Graph;
 import de.hhu.bsinfo.dxgraphloader.loader.formats.AbstractGraphFormatReader;
 import de.hhu.bsinfo.dxgraphloader.util.Tuple;
-import de.hhu.bsinfo.dxram.boot.BootService;
-import de.hhu.bsinfo.dxram.chunk.ChunkLocalService;
 
 /**
  * <h1>EdgeListReader</h1>
@@ -42,11 +39,9 @@ import de.hhu.bsinfo.dxram.chunk.ChunkLocalService;
 
 public final class EdgeListReader extends AbstractGraphFormatReader {
 
-    public EdgeListReader(Graph p_graph,
-            ConcurrentHashMap<Long, Long> p_vertexMap,
-            ConcurrentHashMap<Tuple<Long, Long>, Long> p_edges,
-            ArrayList<Set<Long>> p_remoteKeys, ChunkLocalService p_chunkLocal, BootService p_boot) {
-        super(p_graph, p_vertexMap, p_edges, p_remoteKeys, p_chunkLocal, p_boot);
+    public EdgeListReader(Graph p_graph, ArrayList<Set<Long>> p_vertices,
+            Set<Tuple> p_edges) {
+        super(p_graph, p_vertices, p_edges);
     }
 
     @Override
@@ -59,12 +54,12 @@ public final class EdgeListReader extends AbstractGraphFormatReader {
                     continue;
                 }
                 int index = line.indexOf('\t');
-                createVertex(line.substring(0, index));
+                storeVertexKey(line.substring(0, index));
                 int index2 = line.substring(index + 1).indexOf('\t');
                 if (index2 != -1) {
-                    createVertex(line.substring(index + 1, index + 1 + index2));
+                    storeVertexKey(line.substring(index + 1, index + 1 + index2));
                 } else {
-                    createVertex(line.substring(index + 1));
+                    storeVertexKey(line.substring(index + 1));
                 }
             }
             bufferedReader.close();
