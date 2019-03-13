@@ -19,13 +19,14 @@
 % base packages
 \usepackage[utf8]{inputenc}
 \usepackage{cite}
+\usepackage{url}
+\usepackage{hyperref}
 \usepackage[german, english]{babel} 
 \usepackage{pslatex}
 \usepackage{csvsimple}
 \usepackage[inner=4cm,outer=3cm,top=3cm,bottom=4cm,includeheadfoot]{geometry}
 \usepackage{fancyhdr}
 \usepackage{graphicx}
-
 % captions and figures
 \usepackage{subcaption}
 
@@ -65,6 +66,9 @@
 % for underlining
 \usepackage{ulem}
 \usepackage{tabularx}
+\usepackage[justification=centering]{caption}
+
+\renewcommand{\lstlistingname}{Example}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -115,7 +119,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % german description
-\SetAlgorithmName{Algorithmus}{algorithmus}{Algorithmenverzeichnis}
+\SetAlgorithmName{Algorithm}{algorithm}{List of Algorithms}
 
 \newtheorem{mydef}{Definition}
 
@@ -267,19 +271,19 @@
   
   \ifthenelse{\boolean{opt_abbildungsverzeichnis}}
   {
-    \addcontentsline{toc}{chapter}{Abbildungsverzeichnis}
+    \addcontentsline{toc}{chapter}{List of Figures}
     \listoffigures
     \cleardoublepage
   }{}
   \ifthenelse{\boolean{opt_tabellenverzeichnis}}
   {
-    \addcontentsline{toc}{chapter}{Tabellenverzeichnis}
+    \addcontentsline{toc}{chapter}{List of Tables}
     \listoftables
     \cleardoublepage
   }{}
   \ifthenelse{\boolean{opt_algorithmenverzeichnis}}
   {
-    \addcontentsline{toc}{chapter}{Algorithmenverzeichnis}
+    \addcontentsline{toc}{chapter}{List of Algorithms}
     \listofalgorithms
   }{}
   
@@ -346,10 +350,9 @@
 
 \newcommand{\literatur}
 {
-  \bibliography{\literaturbibtexdatei}
-  \bibliographystyle{plain}
-
-  \addcontentsline{toc}{chapter}{Literaturverzeichnis}
+\bibliographystyle{IEEEtran}
+\bibliography{IEEEabrv,\literaturbibtexdatei}
+  \addcontentsline{toc}{chapter}{Literature}
   \cleardoublepage
   %\bibliographystyle{alpha}
   %\bibliography{books}

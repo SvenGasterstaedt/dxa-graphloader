@@ -19,6 +19,7 @@ package de.hhu.bsinfo.dxgraphloader.loader.graphobjects;
 import java.util.Arrays;
 
 import de.hhu.bsinfo.dxmem.data.AbstractChunk;
+import de.hhu.bsinfo.dxmem.data.ChunkID;
 import de.hhu.bsinfo.dxutils.serialization.Exporter;
 import de.hhu.bsinfo.dxutils.serialization.Importer;
 import de.hhu.bsinfo.dxutils.serialization.ObjectSizeUtil;
@@ -28,18 +29,18 @@ public class Vertex extends AbstractChunk {
     private int m_size = 1;
     private int m_index = 0;
 
-    private long[] m_edges = new long[1];
+    private long[] m_edges = new long[]{ChunkID.INVALID_ID};
 
-    public void incSize(){
+    public void incSize() {
         m_size++;
     }
 
-    public int getSize(){
+    public int getSize() {
         return m_size;
     }
 
-    public void resizeArray(int p_size){
-        m_edges = Arrays.copyOf(m_edges, m_edges.length+p_size);
+    public void resizeArray(int p_size) {
+        m_edges = Arrays.copyOf(m_edges, m_edges.length + p_size);
     }
 
     public Vertex(long p_id) {
@@ -50,13 +51,12 @@ public class Vertex extends AbstractChunk {
         m_edges = new long[1];
     }
 
-
     public void addNeighbor(long p_edgeID) {
-        if(m_index < m_edges.length){
+        if (m_index < m_edges.length) {
             m_edges[m_index] = p_edgeID;
             m_index++;
-        }else{
-            m_edges = Arrays.copyOf(m_edges, m_edges.length+1);
+        } else {
+            m_edges = Arrays.copyOf(m_edges, m_edges.length + 1);
             m_edges[m_index] = p_edgeID;
             m_index++;
         }
@@ -65,20 +65,16 @@ public class Vertex extends AbstractChunk {
     @Override
     public void exportObject(Exporter p_exporter) {
         p_exporter.writeLongArray(m_edges);
-        p_exporter.writeInt(m_size);
-        p_exporter.writeInt(m_index);
     }
 
     @SuppressWarnings("Duplicates")
     @Override
     public void importObject(Importer p_importer) {
         m_edges = p_importer.readLongArray(m_edges);
-        m_size = p_importer.readInt(m_size);
-        m_index = p_importer.readInt(m_index);
     }
 
     @Override
     public int sizeofObject() {
-        return Integer.BYTES * 2 + ObjectSizeUtil.sizeofLongArray(m_edges);
+        return ObjectSizeUtil.sizeofLongArray(m_edges);
     }
 }

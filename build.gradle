@@ -9,17 +9,17 @@ targetCompatibility = '1.8'
 repositories {
     mavenCentral()
 
-    //maven() {
-    //    url "https://dl.bintray.com/hhu-bsinfo/dxram"
-    //}
+    maven() {
+        url "https://dl.bintray.com/hhu-bsinfo/dxram"
+    }
 
     maven {
         url 'https://oss.jfrog.org/artifactory/oss-snapshot-local'
     }
 
-    flatDir {
-        dirs '/home/sven/Schreibtisch/git/dxram/build/libs'
-    }
+    //flatDir {
+    //    dirs '/home/sven/Schreibtisch/git/dxram/build/libs'
+    //}
 }
 
 configurations {

@@ -57,6 +57,10 @@ public final class GraphLoader {
 
     static final String LOAD2_LOCK = "GRL3";
 
+    static final String FREE_LOCK = "GRL4";
+
+    static int WORKERCOUNT = 1;
+
 
     private static final Logger LOGGER = LogManager.getFormatterLogger(GraphLoaderApp.class.getSimpleName());
     private final BootService m_boot;
@@ -116,7 +120,7 @@ public final class GraphLoader {
     public Graph loadFormat(String p_format, String[] p_filenames, int p_workerCount) {
         //parse while reading excludes the reading peer!
         List<Short> peers = m_boot.getOnlinePeerNodeIDs();
-
+        WORKERCOUNT = p_workerCount;
         //the distribution graph object is a reference to all vertices created ion the peers which are store in maps
         m_graph = new Graph(peers, m_chunk);
         m_chunk.create().create(m_boot.getNodeID(), m_graph);
@@ -124,12 +128,16 @@ public final class GraphLoader {
 
         //graph format if supported != null
         GraphFormat graphFormat = m_formats.getFormat(p_format, p_filenames);
-        AbstractFileChunkCreator chunkCreator;
+        AbstractFileChunkCreator chunkCreator = null;
 
         if (graphFormat != null) {
             //some formats need multiple cycles to resolve nodes and edges
             //(typically first node creation and then create edges between)
+
+
+
             for (short cycleCount = 0; cycleCount < 2; cycleCount++) {
+                logMem();
 
                 LOGGER.info("Started cycle '%s' from '%s'!", cycleCount + 1, graphFormat.getCycles());
 
@@ -178,6 +186,8 @@ public final class GraphLoader {
                 int cycleBarrier = Barrier.createBarrier(CYCLE_LOCK, peers.size(), m_sync, m_name);
                 int loadBarrier = Barrier.createBarrier(LOAD_LOCK, peers.size(), m_sync, m_name);
                 int load2Barrier = Barrier.createBarrier(LOAD2_LOCK, peers.size(), m_sync, m_name);
+                int freeBarrier = Barrier.createBarrier(FREE_LOCK, peers.size(), m_sync, m_name);
+
 
 
                 {
@@ -189,12 +199,17 @@ public final class GraphLoader {
                         startJobsOnRemote(peers.get(i), longArray[i], graphFormat.getGraphFormatReader(),
                                 p_workerCount, cycleCount);
                     }
+                    longArray = null;
                 }
+                logMem();
+
                 m_job.waitForLocalJobsToFinish();
                 m_sync.barrierFree(cycleBarrier);
                 m_sync.barrierFree(loadBarrier);
                 m_sync.barrierFree(load2Barrier);
+                m_sync.barrierFree(freeBarrier);
             }
+            chunkCreator.close();
         }
         return m_graph;
     }
@@ -221,5 +236,8 @@ public final class GraphLoader {
         return m_formats;
     }
 
+    public static void logMem(){
+        LOGGER.debug("free memory: %s\t%s",Runtime.getRuntime().freeMemory(),Runtime.getRuntime().totalMemory());
+    }
 }
 

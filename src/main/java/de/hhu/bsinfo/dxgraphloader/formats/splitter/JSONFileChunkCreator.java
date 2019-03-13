@@ -129,4 +129,13 @@ public class JSONFileChunkCreator extends AbstractFileChunkCreator {
             e.printStackTrace();
         }
     }
+
+    @Override
+    public void close() {
+        try {
+            m_reader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

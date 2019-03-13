@@ -20,12 +20,11 @@ import de.hhu.bsinfo.dxmem.data.AbstractChunk;
 import de.hhu.bsinfo.dxmem.data.ChunkID;
 import de.hhu.bsinfo.dxutils.serialization.Exporter;
 import de.hhu.bsinfo.dxutils.serialization.Importer;
-import de.hhu.bsinfo.dxutils.serialization.ObjectSizeUtil;
 
 public class Edge extends AbstractChunk {
 
-    private long[] m_connect = new long[] {ChunkID.INVALID_ID, ChunkID.INVALID_ID};
-    int i = 0;
+    private long connection1 = ChunkID.INVALID_ID;
+    private long connection2 = ChunkID.INVALID_ID;
 
     public Edge() {
     }
@@ -36,43 +35,39 @@ public class Edge extends AbstractChunk {
 
     public Edge(long p_id, long p_vrtxID1, long p_vrtxID2) {
         super(p_id);
-        m_connect[0] = p_vrtxID1;
-        m_connect[1] = p_vrtxID2;
+        connection1 = p_vrtxID1;
+        connection2 = p_vrtxID2;
     }
 
     public void setEndPoint(Vertex p_vrtx1, Vertex p_vrtx2) {
-        m_connect[0] = p_vrtx1.getID();
-        m_connect[1] = p_vrtx2.getID();
+        connection1 = p_vrtx1.getID();
+        connection2 = p_vrtx2.getID();
         p_vrtx1.addNeighbor(getID());
         p_vrtx2.addNeighbor(getID());
     }
 
-    public void addConnection(long p_id) {
-        if(i>1){
-            return;
-        }
-        setConnection(i, p_id);
-        i++;
-    }
-
-    public void setConnection(int p_index, long p_vrtxID) {
-        if (p_index > 0 && p_index < 2) {
-            m_connect[p_index] = p_vrtxID;
+    public void addConnection(long p_vrtxID) {
+        if (connection1 == ChunkID.INVALID_ID) {
+            connection1 = p_vrtxID;
+        } else {
+            connection2 = p_vrtxID;
         }
     }
 
     @Override
     public void exportObject(Exporter exporter) {
-        exporter.writeLongArray(m_connect);
+        exporter.writeLong(connection1);
+        exporter.writeLong(connection2);
     }
 
     @Override
     public void importObject(Importer importer) {
-        m_connect = importer.readLongArray(m_connect);
+        connection1 = importer.readLong(connection1);
+        connection2 = importer.readLong(connection2);
     }
 
     @Override
     public int sizeofObject() {
-        return ObjectSizeUtil.sizeofLongArray(m_connect);
+        return Long.BYTES * 2;
     }
 }

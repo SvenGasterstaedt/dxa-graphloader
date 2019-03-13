@@ -82,4 +82,13 @@ public class NumberedLineFileChunkCreator extends LineFileChunkCreator {
             e.printStackTrace();
         }
     }
+
+    @Override
+    public void close(){
+        try {
+            m_file.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

@@ -50,16 +50,13 @@ public final class EdgeListReader extends AbstractGraphFormatReader {
         try {
             while (bufferedReader.ready()) {
                 String line = bufferedReader.readLine();
-                if (line.charAt(0) == '#') {
+                if (line.length() <= 1 || line.charAt(0) == '#') {
                     continue;
                 }
-                int index = line.indexOf('\t');
-                storeVertexKey(line.substring(0, index));
-                int index2 = line.substring(index + 1).indexOf('\t');
-                if (index2 != -1) {
-                    storeVertexKey(line.substring(index + 1, index + 1 + index2));
-                } else {
-                    storeVertexKey(line.substring(index + 1));
+                String[] keys = line.split("\t");
+                if (keys.length >= 2) {
+                    storeVertexKey(keys[0]);
+                    storeVertexKey(keys[1]);
                 }
             }
             bufferedReader.close();
@@ -77,12 +74,9 @@ public final class EdgeListReader extends AbstractGraphFormatReader {
                 if (line.charAt(0) == '#') {
                     continue;
                 }
-                int index = line.indexOf('\t');
-                int index2 = line.substring(index + 1).indexOf('\t');
-                if (index2 != -1) {
-                    createEdge(line.substring(0, index), line.substring(index + 1, index + 1 + index2));
-                } else {
-                    createEdge(line.substring(0, index), line.substring(index + 1));
+                String[] keys = line.split("\t");
+                if (keys.length >= 2) {
+                    createEdge(keys[0], keys[1]);
                 }
             }
             bufferedReader.close();

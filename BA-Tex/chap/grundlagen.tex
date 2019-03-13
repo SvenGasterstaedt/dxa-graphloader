@@ -1,0 +1,288 @@
+\chapter{Preliminaries}
+\label{Preliminaries}
+\section{Graph File Formats}
+A graph file format is a specification for describing a graph in a predefined syntax, which then can be read in by an application to access the data. Over the course of time many graph file formats have been established. Most of these formats were developed, with special use cases in mind. For example GraphML was designed to support as many features as possible for graph drawing\cite{Roughan.10.03.2015}.
+In the recent time the trend to invent new graph formats is decreasing. It can be seen  that most of the formats are not developed any further, also there is an significant reduction of XML type formats in the last couple of years and the number of JSON graph file formats is rising\cite{Roughan.10.03.2015}.
+Based on the collection provided in \cite{Roughan.10.03.2015}, a table with formats was created to identify their up-to-dateness.
+
+\begin{table}[H]
+\begin{center}
+		\caption{Selection of up-to-date Graph File Formats based on \cite{Roughan.10.03.2015}}
+    \begin{tabular}{| l | l | l | l |}
+    \hline
+	\bfseries Id & \bfseries Graph file format & \bfseries Reference time frame & \bfseries Structure\\ \hline
+	1 & GraphML & 2000 - present & XML\\ \hline
+	2 & JSON Graph & 2014 - present & JSON\\ \hline
+	3 & KrackPlot & 1993 - present & simple\\ \hline
+	5 & Ordered Graph Data Language & 2002 - present & BNF\\ \hline
+	6 & Open Graph Markup Language & 2012 - present & XML\\ \hline
+	7 & Simple Interaction Format & 2003 - present & simple\\ \hline
+	8 & Stanford Network Analysis Platform & 2005 - present & simple\\ \hline
+	9 & Text Encoding Initiative Graph Forma & 2001 - present & XML\\ \hline 
+	10 & Trival Graph Format & unknow - present & simple\\ \hline
+
+    \end{tabular}
+\end{center}
+\label{tabelle_avarage_time.10}
+\end{table}
+ There are several properties, which a graph file format has to fulfill. For example, not all formats are a good option for big data sets. XML and even JSON formats have an bigger overhead then just a simple edge list \cite{JSONvsXML.10}. This overhead scales with the size of the data and can have an impact on the performance of the loading. Our file formats have to be scalable, otherwise just small datasets can be supported and this results in probably faster loading times on a single peer. Most big data sets are provided in simple formats and resolve around keeping the overhead small. But at the same time these formats try to be as simple as possible.
+ Also there file formats that do not provide any clear specifications or the development has been stopped. This is a problem with more complex formats, because this problem could lead to inconsistencies while loading or reading these format files. 
+ For more simple formats are often no specifications needed, because they follow a trivial approach. This simplicity makes them self-explanatory.
+
+\subsection{Division of Formats}
+To enable distributed loading, the graph file format needs to be split into multiple chunks \cite{parallelGraphLoading.10}, which then can be distributed inside the distributed system. The goal is to gain performance, while processing the data parallel on multiple nodes. To be able to split the file, an section must be identified, so that the information inside these chunks does not lose it current context. A chunk without its context, can not be interpreted correctly and will unavoidable lead to an wrong graph. If the context is not keep-able, than loading the format on a single node is probably the best workaround.\\
+It is not surprising that most formats are divisible in some way, but the main factor to consider at this point, is performance. All peers must wait for the chunks to be created, that is why in this step no interpretation of the file should be done. This is not avoidable for all formats, but for the most simple formats there is a way split files without or minimal reading of the file itself.\\
+To determine if a format is divisibility, the structure of the file needs to be specified and analyzed. Most important data inside the file should not be dependent on other sections of the same file. In other words the chunks should contain all needed data for reading. 
+There will be formats that specify information about vertices in multiple sections of the file, but this information needs to be independent. If the following data can only be processed after processing all lines before, then this section can not be split. Sections that can not be split for example are edge-tuples. This sections will be referred as indivisible sections.\\
+These indivisible sections are often surrounded or closed by separators. A separator could be anything. For example newline characters, tabulations and  semicolons are often used, but also tags (XML), brackets (JSON) or even the position itself in binary sequences can be used to divide these sections. Some formats provide meta data, that will help split up files by defining the position of the information and their format.\\
+A format is fully divisible if it could be split at any separator. This will mostly be true for simple formats.
+
+\newpage
+\subsection{Simple Formats}
+Simple formats are often a trivial approach of creating a low level but highly functional graph file format. These formats are often self-explanatory, but have no official specification. This leads to various problems, because it is not clear where the boundaries of this formats are. For example the information of the used character set or separators is missing. Also it is not always stated if the format contains meta data or comments\cite{Roughan.10.03.2015}.\\
+Many of these formats are fully divisible, due to the fact that they often only contain small indivisible sections. These sections can be grouped and stored in chunks. Also leads their simple structure to a plain hierarchy inside the file.
+
+\subsubsection{Trivial Graph Formats}
+As trivial graph file formats (TGF) are referred to a list of formats, that follows a simple implementation but have no specification. The most common formats are standard approaches like edge lists, adjacency matrices, neighbor lists and path list.\\
+
+\noindent{\textit{Edge List}}\\
+The Edge list is the most common and trivial approach of storing a graph.
+This format is just a list of all edges of the graph.
+One line represents one edge and is represented by two vertices. Each line forms an indivisible section, after which the file could be split. The vertices of an edge are split by a separator. Often tabulations are used here, but also spaces and other characters can be used (e.g ~\ref{edgeEx}). This format has a relatively low overhead and scales well.
+\vspace{-7mm}
+\begin{center}
+	\begin{minipage}{.6\textwidth}
+\begin{lstlisting}[numbers=left,firstnumber=1,caption={Edge List},captionpos=b,linewidth={\textwidth}, escapeinside=||,label={edgeEx}]
+|$v_1$| |$v_2$|
+|$v_1$| |$v_3$|
+|$v_2$| |$v_3$|
+\end{lstlisting}
+\end{minipage}
+\end{center}
+
+
+\noindent{\textit{Binary Edge List}}\\
+The Binary Edge List is a compressed version of the Edge List, where no lines are used, instead all edges have a fixed size. For example an edge is represented by a start vertex and a target vertex. Vertices are written in this case as eight bytes each, so the first eight bytes indicate the start vertex and the following eight bytes the target vertex (e.g ~\ref{BedgeEx}). This compression leads to the advantage that no separator is used. The Binary Edge List has no overhead, but the human readability is lost. This format scales especially well for big graphs and is simple to read in.
+\vspace{-7mm}
+\begin{center}
+	\begin{minipage}{.6\textwidth}
+\begin{lstlisting}[numbers=left,firstnumber=1,caption={Binary Edge List in Hex View},captionpos=b, linewidth={\textwidth}, escapeinside=||, breakindent=0pt,	
+breaklines=true,label={BedgeEx}]
+|$0000000000000001_{16}$||$0000000000000002_{16}$||$0000000000000001_{16}$| |$0000000000000003_{16}$||$0000000000000002_{16}$||$0000000000000003_{16}$| ...|$v_{1}v_{2}v_{1}v_{3}v_{2}v_{3}$|
+\end{lstlisting}
+\end{minipage}
+\end{center}
+\newpage
+\noindent{\textit{Adjacency Matrix}}\\
+The Adjacency Matrix is a format, which is based on a adjacency matrix. Each entry in this matrix represents an edge connection between the vertex, which are identified through the row and column number. Often the row and column numbers are not written in the file and the parser has to keep track of them (e.g ~\ref{AdjMat}). The biggest flaw of this format is that it does not scale well for big data sets, due to the fact that every vertex got an entry for all other vertices. So its size increases squarely to the amount of vertices of the graph.
+\vspace{-7mm}
+\begin{center}
+	\begin{minipage}{.6\textwidth}
+\begin{lstlisting}[numbers=left,
+    stepnumber=1,caption={Adjacency Matrix},captionpos=b, linewidth={\textwidth}, escapeinside=||,label={AdjMat}]
+0 1 1
+0 0 1
+0 0 0
+\end{lstlisting}
+\end{minipage}
+\end{center}
+
+\noindent{\textit{Neighbor List}}\\
+The Neighbor List is a combination of an Adjacency Matrix and an Edge List, but it removes the unnecessary entries for each vertex. Each row of the file describes all connection of a vertex. In an undirected graph the back and forth connections could be omitted, beacuse they are already listed on a vertex. Each line represents one vertex, but the lines can have an arbitrary length. This format scales better then the Edge List, due to the fact that vertices are identified through lines and the start vertex is not repeated for every edge. There are two main variants of Neighbor Lists. One variant is that the identifiers of the vertex are listed at the beginning of the line (e.g. ~\ref{neighbor1}) and the other just omits the start vertex and they get identified through the line number, which then needs to be tracked (e.g. ~\ref{neighbor2}).\\
+\noindent\begin{minipage}{.48\textwidth}
+	\begin{lstlisting}[numbers=left,firstnumber=1,numberfirstline=true,caption={Neighbor List with start vertices},captionpos=b, linewidth={\textwidth}, escapeinside=||,gobble=4,label={neighbor1}]
+	|$v_1$| |$v_2$| |$v_3$|
+	|$v_2$| |$v_3$|
+	|$v_3$|
+	\end{lstlisting}
+\end{minipage}\hfill
+\begin{minipage}{.48\textwidth}
+	\begin{lstlisting}[ numbers=none,showlines=true, stepnumber=1,caption={Neighbor List without start vertices},captionpos=b, linewidth={\textwidth}, escapeinside=||,gobble=4,label={neighbor2}]
+	|$v_2$| |$v_3$|
+	|$v_3$|
+	
+	\end{lstlisting}
+\end{minipage}
+
+\noindent{\textit{SNAP Format}}\\
+The SNAP Format just makes a simple addition to the Edge List by allowing comments inside the file. These are identified through a hash tag at the beginning of a line and are valid until the next line.\\
+
+\newpage
+\noindent{\textit{Edge/Vertex-List with Properties}}\\
+This format is used by the LDBC-Graphalytics Benchmark and consists out of two files. One file contains all vertices and the other file contains all edges and their properties. The edges in the edge file are weighted edges and are displayed as an Edge List.The vertices are displayed as a simple list with one vertex per line (e.g. ~\ref{vertexL}). The values of the edges are float numbers (e.g. ~\ref{edgeL}).\cite{LDBC-Graphalytics.10}\\
+\noindent\begin{minipage}{.48\textwidth}
+	\begin{lstlisting}[numbers=left,
+	stepnumber=1,showlines=true,caption={Vertex-List},captionpos=b, linewidth={\textwidth}, escapeinside=||,gobble = 4,label={vertexL}]
+	|$v_1$|
+	|$v_2$|
+	|$v_3$|
+	\end{lstlisting}
+\end{minipage}\hfill
+\begin{minipage}{.48\textwidth}
+	\begin{lstlisting}[numbers=none,caption={Edge-List with Properties},captionpos=b, linewidth={\textwidth}, escapeinside=||,gobble = 4,label={edgeL}]
+	|$v_1$| |$v_2$| |$value$|
+	|$v_2$| |$v_3$| |$value$|
+	|$v_3$| |$v_1$| |$value$|
+	\end{lstlisting}
+\end{minipage}
+
+\subsubsection{SIF Format}
+The SIF Format is an extension of the Neighbor List with start vertices. It adds the ability to declare connection types, which hold information about the relation of two vertices. Additionally, the type of connection is specified by a unique string (e.g. ~\ref{SIF}). It allows multiple edges between the same nodes, if the connection type varies. Otherwise, it is specified to ignore duplicates. One downside is that the format allows tabulations or spaces as separators. It is stated that if no tabulations are used in the whole file spaces are used as separators. Because all lines have an equal format, it can be stated, if the first line does not contain any tab character, then spaces will be used as separators for the whole file. Based on the fact that SIF is an extension of the Neighbor List, therefor SIF is also line wise divisible, because only one separator is used per file and the lines are indivisible sections which can not be split. This format is often used in biological context and edge types often display interactions between two molecules.\cite{TheCytoscapeConsortium.2017}
+\vspace{-7mm}
+\begin{center}
+	\begin{minipage}{.6\textwidth}
+		\begin{lstlisting}[numbers=left,
+		stepnumber=1,caption={Simple Graph on SIF Format},captionpos=b, linewidth={\textwidth}, escapeinside=||,gobble = 8,label={SIF}]
+		|$v_1$| <type 1> |$v_2$|
+		|$v_1$| <type 2> |$v_2$| |$v_5$| |$v_6$|
+		|$v_3$|
+		\end{lstlisting}
+	\end{minipage}
+\end{center}
+
+\subsubsection{KrackPlot 3.0}
+KrackPlot 3.0 follows for simple formats a more complex syntax then the TGFs, due to its optional features. The first line contains the number of nodes specified in the following data. This information helps with various problems, like appropriately splitting nodes  and edges. The next line can contain two options “!nc” or “!nl”. The first option specifies that the following data contains no coordinates. The other option declares that no labels will be specified (e.g. ~\ref{krack2}). If labels and/or coordinates are defined they start on the second line until line (node-amount)+2 (e.g. ~\ref{krack1}). After the labels/coordinates or if theses are not defined, then the second line is an Adjacency Matrix which specifies the connections of each node.
+This format does not scale well for big data sets due to its Adjacency Matrix, but splitting KrackPlot would be rather easy due to the fact that the number of nodes is known and only two lines need to be read in to identify the whole nature of the file. This format is combination of a vertex list with parameters and an Adjacency Matrix. \cite{D.KrackhardtJ.BlytheC.McGrath.4.12.2001}\\
+\noindent\begin{minipage}{.48\textwidth}
+	\begin{lstlisting}[ numbers=left,
+	stepnumber=1,showlines=true,caption={Krack Plot 3.0 with Vertex Labels and Coordinates},captionpos=b, linewidth={\textwidth}, escapeinside=||,gobble = 4, label=krack1]
+	3
+		|$x_{v1}$|    |$y_{v1}$|  |$label_{v1}$|  
+		|$x_{v2}$|    |$y_{v2}$|  |$label_{v2}$|   
+		|$x_{v3}$|    |$y_{v3}$|  |$label_{v3}$|  
+	000
+	101
+	110
+	\end{lstlisting}
+\end{minipage}\hfill
+\begin{minipage}{.48\textwidth}
+	\begin{lstlisting}[numbers=none,caption={Krack Plot 3.0 with Vertex Labels},captionpos=b, linewidth={\textwidth}, escapeinside=||,gobble = 4,label=krack2]
+	3
+	!nc	|$label_{v1}$|  
+		|$label_{v2}$|   
+		|$label_{v3}$| 
+	000
+	101
+	110
+	\end{lstlisting}
+\end{minipage}
+
+\subsection{XML Formats}
+There are various implementations of graph file formats using XML. The XML format is based around tags, which define the described object. It is a structure descriptive language for hierarchically structured data. This results that reading the formats information is not line based rather it is tag based. This format is hard to divide without reading it completely, because the XML format consists of multiple layers. This results in the problem to determine the layer on which the object is located. This problem can only be solved by counting the opened and closed tags or using a flat hierarchy\cite{bray1997extensible,Roughan.10.03.2015}.
+The XML language provides a much higher overhead as the simple graph file formats, which results in an increased file size and as a consequence increased loading time.
+
+\subsubsection{GraphML}
+The GraphML is a XML based graph file format. It consists out of one graph element which can contain unordered node (vertex) and edge elements. Each node needs an unique id and each edge needs a source and a target vertex (e.g. ~\ref{GraphMl}). GraphML supports various features like hyperedges and nested networks (e.g. ~\ref{AnhangGraphMl}). Due to its rich features, there are various cases, which must be dealt with. There must be a strategy to deal with hyperedges or nested graphs, when parsing the format. GraphML does not scale well for big data sets because of its massive overhead. This format is not intended as a main source for large datasets, but it is useful for graph drawing. GraphML supports name spaces and is easily extensible due to schemata. \cite{brandes2013graph,kuhner2013graphml}
+\vspace{-7mm}
+\begin{center}
+	\begin{minipage}{.8\textwidth}
+		\begin{lstlisting}[numbers=left,
+		stepnumber=1,caption={A Simple Graph in GraphML},captionpos=b, linewidth={\textwidth}, escapeinside=||,label=GraphMl]
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns">
+	<graph id="Graph" edgedefault="undirected">
+		<node id="v1"/>
+		<node id="v2"/>
+		<node id="v3"/>
+		<edge source="v1" target="v3"/>
+		<edge source="v2" target="v3"/>
+		<edge source="v3" target="v4"/>
+	</graph>
+</graphml>
+		\end{lstlisting}
+	\end{minipage}
+\end{center}
+
+\subsubsection{Resource Description Framework}
+The Resource Description Framwork/XML (RDF) format is not meant to be a graph format, but is commonly used for smaller graphs. It defines objects and attributes via name spaces (e.g. ~\ref{RDF}). The main feature of this format is its portability due to the model of three information types, which can be mapped as a network. Additionally, RDF can be extended with Graph Stylesheets to allow styling of the nodes and edges (e.g. ~\ref{AnhangRDF}).\cite{miller1998introduction,Lassila98resourcedescription}
+\begin{center}
+\begin{minipage}{.8\textwidth}
+\begin{lstlisting}[numbers=left,
+		stepnumber=1,caption={A Simple Graph in RDF from \cite{miller1998introduction}},captionpos=b, linewidth={\textwidth}, escapeinside=||, label=RDF]
+<?xml version="1.0"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns:dc="http://purl.org/dc/elements/1.1/"
+  xmlns:ex="http://example.org/stuff/1.0/">
+	<rdf:Description 
+	  rdf:about="http://www.w3.org/TR/rdf-syntax-grammar"
+	  dc:title="RDF1.1 XML Syntax">
+	<ex:editor>
+		<rdf:Description ex:fullName="Dave Beckett">
+			<ex:homePage rdf:resource="http://purl.org/net/dajobe/" />
+		</rdf:Description>
+	</ex:editor>
+	</rdf:Description>
+</rdf:RDF>
+\end{lstlisting}
+\end{minipage}
+\end{center}
+
+\subsubsection{Text Encoding Initiative Graph Format}
+The Text Encoding Initiative Graph Format is a XML based graph file format. It is not as rich on features as GraphML but the due the XML based syntax it shares some similarities. The edges get defined through a arc element, which is very similar to an edge element of GraphML (e.g. ~\ref{TEI}). 
+\begin{center}
+	\begin{minipage}{.8\textwidth}
+		\begin{lstlisting}[numbers=left,
+		stepnumber=1,caption={A Simple Graph in Text Encoding Initiative Graph Format},captionpos=b, linewidth={\textwidth}, escapeinside=||,gobble=8, label=TEI]
+		<graph type='undirected'
+		  id='GRAPH'
+		  label='A Simple Graph'
+		  order='5'
+		  size='4'>
+			<node label='v1' id='v1' degree='2'/>
+			<node label='v2' id='v2' degree='2'/>
+			<node label='v3' id='v3' degree='3'/>
+			<arc  from='v1' to='v2'/>
+			<arc  from='v2' to='v3'/>
+			<arc  from='v1' to='v3'/>
+		</graph>
+		\end{lstlisting}
+	\end{minipage}
+\end{center}
+\newpage
+
+\subsection{Other Formats}
+
+\subsubsection{JSON Graph}
+JSON Graph is based on the JSON-syntax-specification, which allows the format to be read in by normal JSON parsers. This format defines first an graph array, which can contain multiples graph objects. Each graph contains multiple other object, like nodes, edges and/or meta data. JSON Graph specifies that every graph object must contain an array of nodes and an array of edges. Edges always contain the fields "source" and "target", which contain the id of a vertex. Nodes always contain a unique id, which gets referenced by the edges. All field are JSON Strings (e.g. ~\ref{JSONEx})\cite{json.format,Roughan.10.03.2015}.\\
+The JSON-syntax contains less overhead then a XML based format, but still more overhead then the simple formats\cite{json.format,Roughan.10.03.2015}.
+\vspace{-7mm}
+\begin{center}
+	\begin{minipage}{.8\textwidth}
+		\begin{lstlisting}[numbers=left,
+		stepnumber=1,caption={A Simple Graph in JSON Graph},captionpos=b, linewidth={\textwidth}, escapeinside=||,gobble=8, label=JSONEx]
+		{"graphs": [{
+			"type": "simpleGraph",
+			"label": "A Simple Graph",
+			"nodes": [{
+				"id": "1", 
+				"label": "vertex1"
+				},{
+				"id": "2",
+				"label": "vertex2"
+				},],
+			"edges": [{
+				"source": "1", 
+				"target": "2",
+				}]
+		}]}
+		\end{lstlisting}
+	\end{minipage}
+\end{center}
+\subsubsection{Open Graph Markup Language}
+The Open Graph Markup Language (OPML) is part of the Open Graph Drawing Framework. The OPML has some similarities to JSON, but uses less brackets. This format offers many options for graph drawing, like coordinates, and colors. The format consists out of a graph object, which contains nodes and edges (e.g. ~\ref{OGML})\cite{opengraph.format}.
+\begin{center}
+	\begin{minipage}{.8\textwidth}
+		\begin{lstlisting}[numbers=left,
+		stepnumber=1,caption={A Simple Graph in Open Graph Markup Language},captionpos=b, linewidth={\textwidth}, escapeinside=||,gobble=8,label=OGML]
+		graph [
+			Creator "makegml" directed 0 label ""
+			node [ id 1 ]
+			node [ id 2 ]
+			node [ id 3 ]
+			edge [ source 1 target 2 ]
+			edge [ source 1 target 3 ]
+			edge [ source 2 target 3 ]
+		]
+		\end{lstlisting}
+	\end{minipage}
+\end{center}

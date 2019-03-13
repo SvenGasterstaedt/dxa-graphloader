@@ -1,0 +1,63 @@
+\chapter{Design}
+\label{design}
+This chapter will give a brief overview of the design requirements of a graph loading application for a distributed system.
+\section{Distributed Loading of Graph File Formats}
+Some principles for parallel graph loading\cite{parallelGraphLoading.10} can be applied partly onto distributed graph loading as well. The formats should get loaded on multiple nodes and with multiple threads (workers). Based on these properties the whole problem is much more complex. In fact these principles can be applied on a node local context for each node.
+There are several stages of parallel graph loading and even more for the distributed approach.
+
+\subsection{Storage of Graph Objects}
+To resolve edges and storing them all vertices need to be constructed. On a local scope this is a rather easy task, due to fact that all vertices can be stored on one node and in data structures like a HashSet. For distributed system this task gets rather complex, due to the fact that each vertex has to belong to a node. This means for one vertex there should be only 
+one object on one node. Therefore, vertices need to be assign to nodes and if a node gets read on a peer, which it is not to be supposed to be located on, it needs to relocated. This requires a synchronization between nodes. A sorted vertex set isn't needed. This also end up with a set of vertices for each peer.\\
+After all vertices have been assigned to each peer and relocated, the edges need to be read. Therefore, an edge can have two different types. The first type is a \textit{local edge}, this means all connections of this edge are located on this specific node and can be resolved without any network communication.  The other type of edge is the \textit{shared edge}. In this edge type at least one connection is stored on a remote node and needs to be resolved. All references of the remote stored vertices need to be retrieved. Also, the remote node needs information about this edge to store it inside the vertex object and the local node needs the information of this vertex to store it inside the edge.
+
+\subsection{Key Mapping for Vertices}
+There are several problems with key mapping in a distributed network. Keys need to be unique and all nodes should be able to get the target node linked with the key.\\
+One simple approach would be a global service who provides unique keys and registers them, so they can get retrieved if needed. This approach holds a big flaw, due to the amount of keys needed for one big graph. This would result in at least one request for registering an object and retrieving its key. The generated network traffic would probably crash the system.\\
+A node local unique key service is needed, which is based on assigning keys ranges to each node of the network \cite{parallelGraphLoading.10}. Therefore, some restrictions need to be made. For example if string keys are used they will be mapped onto numbers. This limits the amount of characters which can be used as string, so a unique key can be guaranteed. The key should also provide an equal distribution of vertices on nodes to balance the payload of the loader and also the algorithms using this data later on.\cite{PGX}\\
+
+\subsection{File Loading}
+Due to the fact that loading vertices and edges is done in different stages, there are two different methods for loading the input files. One approach based on \textit{Single-Pass-Step}\cite{parallelGraphLoading.10} is reading the input file once and storing all data temporarily in-memory. Therefore, the contents of the file are stored in memory even if the data is not needed yet. This seems quite inefficient in view of graph file formats which separate their nodes and edges strictly like \textit{JSON Graph} or the \textit{Edge/Vertex-List with Properties}.\\
+Another approach from parallel graph loading is \textit{Two-Pass-Step}\cite{parallelGraphLoading.10}. This results in two cycle, where first the input file gets read and then discarded and second after creating all vertices the file gets read again. The two cycles of this methods lead to less memory consumption for formats, who separate their data and provide easy access to each sections of their format.\\
+Based on the fact that graph file gets split up and distributed inside the system, it is more convenient to remove unnecessary information inside of the chunks and transmit only the data needed for the according cycle.The loading of any only necessary data results in less parsing time and accelerated graph reading time.\\
+
+
+\subsection{Synchronization}
+To provide consistency, when reading the graph files, there must be some synchronization between the thread on a local node and between nodes as well. On a local nodes scope, operations on data structures must be atomic. Also it is forbidden to override graph objects from remote nodes, due to fact that this will unavoidably lead to inconsistencies. To synchronize operations and stages between nodes, barriers will be used, to ensure that a stage has finished on all nodes. Also, if multiple cycles (\textit{Two-Pass-Step}) are used, then they got to be synchronized as well.
+
+
+\section{Internal Graph File Format}
+Due to the fact that it is not possible to support every single format available, it will be tried to provide a consensus format, where all main features, which are needed for algorithms , are supported. One key that every graph format features are edges. In most trivial approaches vertices get neglected and can not contain any additional meta data. This may be not from advantage for all algorithms. So if meta data could be attached to a vertex and to an edge. The syntax should be fairly simple for easy understanding and lower meta data overhead.\\\\
+Many simple formats do not provide any ability to add information to vertices. The only simple format, that attaches some kind of information to a vertex is \textit{KrackPlot}, but this informations are limited. Therefore, to provide low memory usage while file reading, vertices and edges will be split up like in \textit{Edge/Vertex-List with Properties}. To provide easy extension of the meta data amount, the format will provide the option to add none till multiple meta data sets. These meta data sets should be divided by tabulations and are line bound to the vertex.\\
+\noindent\begin{minipage}{.48\textwidth}
+	\begin{lstlisting}[numbers=left,
+	stepnumber=1,showlines=true,caption={Vertex File},captionpos=b, linewidth={\textwidth}, escapeinside=||,gobble = 4]
+	|$v_1$| |$dataset1_{v1}$| ... |$datasetN_{v1}$|
+	|$v_2$| |$dataset1_{v2}$| ... |$datasetN_{v2}$|
+	|$v_3$| |$dataset1_{v3}$| ... |$datasetN_{v3}$|
+	\end{lstlisting}
+\end{minipage}\hfill
+\begin{minipage}{.48\textwidth}
+	\begin{lstlisting}[numbers=none,caption={Edge File},captionpos=b, linewidth={\textwidth}, escapeinside=||,gobble = 4]
+	|$v_1$| |$v_2$| |$dataset1_{v1}$| ... |$datasetN_{v1}$|
+	|$v_2$| |$v_3$| |$dataset1_{v1}$| ... |$datasetN_{v1}$|
+	|$v_3$| |$v_1$| |$dataset1_{v1}$| ... |$datasetN_{v1}$|
+	\end{lstlisting}
+\end{minipage}  
+There is no information given about the nature of the datasets, for example if they consist out of strings, integers, float or other data structures. This based on the fact, that the provided meta data, must be supported by the underlying vertex and edge implementation. Therefore, it must be specified, which vertex implementation should be used or the vertex implementation should be dynamic.\\
+One problem of this work is that for custom implementations of vertices to work, they had to be instantiated via reflection. Due to the fact that reflection is not implemented, this lead to a much simpler version of graph file format to begin with. The model of the vertex/edge-list files was kept, but the additional dataset were removed (e.g.~\ref{edgevertexl}).
+
+\noindent\begin{minipage}{.48\textwidth}
+	\begin{lstlisting}[numbers=left,
+	stepnumber=1,showlines=true,caption={Vertex File},captionpos=b, linewidth={\textwidth}, escapeinside=||,gobble = 4, label=edgevertexl]
+	|$v_1$|
+	|$v_2$|
+	|$v_3$|
+	\end{lstlisting}
+\end{minipage}\hfill
+\begin{minipage}{.48\textwidth}
+	\begin{lstlisting}[numbers=none,caption={Edge File},captionpos=b, linewidth={\textwidth}, escapeinside=||,gobble = 4]
+	|$v_1$| |$v_2$|
+	|$v_2$| |$v_3$|
+	|$v_3$| |$v_1$|
+	\end{lstlisting}
+\end{minipage}  

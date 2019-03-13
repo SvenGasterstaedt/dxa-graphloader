@@ -89,8 +89,10 @@ public class LineFileChunkCreator extends AbstractFileChunkCreator {
                 if (hasRemaining()) {
                     remainingLine = (m_file.readLine() + '\n').getBytes();
                 }
-                m_content = ByteBuffer.allocate(m_content.length + remainingLine.length).put(m_content).put(
-                        remainingLine).array();
+                ByteBuffer b =  ByteBuffer.allocate(m_content.length + remainingLine.length).put(m_content).put(
+                        remainingLine);
+                m_content = b.array();
+                b = null;
                 return new FileChunk(m_content);
             }
         } catch (IOException ex) {
@@ -104,6 +106,15 @@ public class LineFileChunkCreator extends AbstractFileChunkCreator {
         m_cycle = p_cycle;
         try {
             m_file.seek(0);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void close(){
+        try {
+            m_file.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

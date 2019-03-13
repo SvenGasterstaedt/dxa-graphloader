@@ -1,11 +1,14 @@
 \babel@toc {english}{}
 \addvspace {10\p@ }
 \addvspace {10\p@ }
-\contentsline {figure}{\numberline {2.1}{\ignorespaces An example graph with three vertices in different trivial graph formats\cite {Roughan.10.03.2015}\relax }}{8}{figure.caption.4}
-\addvspace {10\p@ }
-\contentsline {figure}{\numberline {3.1}{\ignorespaces Topology of DXRAM\relax }}{11}{figure.caption.11}
-\contentsline {figure}{\numberline {3.2}{\ignorespaces Schema of code integeration in DXRAM\relax }}{12}{figure.caption.12}
-\addvspace {10\p@ }
-\contentsline {figure}{\numberline {4.1}{\ignorespaces IO Benchmark for File reading in Java\relax }}{17}{figure.caption.15}
 \addvspace {10\p@ }
 \addvspace {10\p@ }
+\contentsline {figure}{\numberline {4.1}{\ignorespaces Topology of DXRAM\relax }}{17}{figure.caption.11}
+\contentsline {figure}{\numberline {4.2}{\ignorespaces Schema of Foreign Code Execution in DXRAM\relax }}{19}{figure.caption.12}
+\contentsline {figure}{\numberline {4.3}{\ignorespaces Schema of Integeration of the Graph Loader in DXRAM\relax }}{19}{figure.caption.13}
+\contentsline {figure}{\numberline {4.4}{\ignorespaces Local Single Threaded Benchmark of Loading and Parsing of different sized Graphs in Edge List Format for a Single-Pass Step\relax }}{20}{figure.caption.14}
+\contentsline {figure}{\numberline {4.5}{\ignorespaces Stages of the GraphLoader Job\relax }}{25}{figure.caption.18}
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\addvspace {10\p@ }
+\contentsline {figure}{\numberline {A.1}{\ignorespaces Graph in RDF\relax }}{32}{figure.caption.19}

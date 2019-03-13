@@ -27,4 +27,6 @@ public abstract class AbstractFileChunkCreator {
     public abstract FileChunk getNextChunk();
 
     public abstract void setCycle(short p_cycle);
+
+    public abstract void close();
 }

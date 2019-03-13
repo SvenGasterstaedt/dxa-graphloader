@@ -16,21 +16,21 @@
 
 package de.hhu.bsinfo.dxgraphloader.loader.data;
 
+import java.util.Arrays;
+
 import de.hhu.bsinfo.dxmem.data.AbstractChunk;
+import de.hhu.bsinfo.dxmem.data.ChunkID;
 import de.hhu.bsinfo.dxutils.serialization.Exporter;
 import de.hhu.bsinfo.dxutils.serialization.Importer;
 import de.hhu.bsinfo.dxutils.serialization.ObjectSizeUtil;
 
 public final class Long2DArray extends AbstractChunk {
 
-    private long[][] m_chunks = new long[0][0];
+    private long[][] m_chunks;
 
-    @SuppressWarnings("unused")
-    public Long2DArray() {
-    }
-
-    public Long2DArray(long p_id) {
+    public Long2DArray(int p_size, long p_id) {
         setID(p_id);
+        m_chunks = new long[p_size][];
     }
 
     public Long2DArray(int p_size) {
@@ -48,6 +48,10 @@ public final class Long2DArray extends AbstractChunk {
 
     public long[] getArray(int p_pos) {
         return m_chunks[p_pos];
+    }
+
+    public int getSize() {
+        return m_chunks.length;
     }
 
     @Override
