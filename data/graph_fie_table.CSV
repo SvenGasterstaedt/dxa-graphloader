@@ -1,0 +1,22 @@
+Id;Graph File Format;Reference Time Frame;Structure
+1;bintsv4 (GraphLab);2009 – 2015;Simple binary
+2;BioGRID TAB 2.0;2003 – present;simple
+3;Dot;2000 – present;BNF
+4;Graph::Easy;2004 – present;intermedia
+5;GraphML;2000 – present;XML
+6;Internet Topology Data Kit;2002 – present;simple
+7;JSON Graph;2014 – present;JSON
+8;LEMON Graph Format;2008 – present;intermedia
+9;KrackPlot;1993 – present;simple
+10;Matlab;1996 – present;HDF5
+11;Nested Network Format;2003 – present;simple
+13;Ordered Graph Data Language;2002 – present;BNF
+14;Open Graph Markup Language;2012 – present;XML
+15;X Pajek Tool’s .net format;1996 – present;intermedia
+17;Protenomics Standards Initiative Molecular Interaction;2002 – present;XML
+18;Simple Interaction Format;2003 – present;simple
+19;Stanford Network Analysis Platform;2005 – present;simple
+20;So NIA Son format;2002 – present;intermedia
+21;Text Encoding Initiative Graph Format;2001 – present;XML
+22;Trival Graph Format;NA – NA;simple
+23;Y Graph Format;2004 – 2018;simple
